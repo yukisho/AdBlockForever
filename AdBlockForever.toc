@@ -2,7 +2,7 @@
 ## Title: AdBlock Forever
 ## Notes: Hides guild recruitment and profession advertisements from public chat.
 ## Author: Gravvy
-## Version: 0.1.0
+## Version: 0.3.0
 ## SavedVariables: AdBlockForeverDB
 ## IconTexture: Interface\AddOns\AdBlockForever\Media\Icon
 

@@ -80,6 +80,7 @@ local GUILD_CONTEXT = {
 local GUILD_RECRUITING = {
     "is recruiting", "are recruiting", "now recruiting", "recruiting", "guild recruiting", "guild recruitment",
     "guild lf", "guild looking for", "looking for members", "seeking members", "recruiting everyone",
+    "accepting anyone", "accepting players", "accepting members", "accepting new members",
     "join our guild", "join my guild", "would you like to join", "want to join", "like to join",
     "interested in joining", "are you looking for a guild", "guild invite",
     "we would love to have you", "we'd love to have you",
@@ -94,14 +95,15 @@ local GUILD_RECRUITING = {
 }
 
 local MEMBER_SIGNALS = {
-    "members", "member", "players", "raiders", "all roles", "any role", "everyone", "socials",
+    "members", "member", "players", "new players", "returning players", "raiders",
+    "all roles", "any role", "everyone", "socials",
     "mitglieder", "spieler", "membres", "joueurs", "miembros", "jugadores", "membros", "jogadores",
     "membri", "giocatori", "członków", "graczy", "игроков", "участников", "成员", "成員", "玩家", "길드원",
 }
 
 local JOIN_SIGNALS = {
     "join us", "join the", "join up", "come join", "apply", "message us", "message me", "contact us", "contact me",
-    "whisper", "send a tell", "pst", "pm for", "dm for",
+    "whisper", "send a tell", "send me a message", "want more info", "pst", "pm for", "dm for", "dm me",
     "beitreten", "bewerben", "flüstern", "rejoignez", "postulez", "murmurez", "únete", "unete", "susurra",
     "junte-se", "sussurre", "unisciti", "candidati", "dołącz", "dolacz", "napisz", "вступай", "пиши", "加入我们", "加入我們", "加入", "문의",
 }

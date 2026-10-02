@@ -489,13 +489,20 @@ local function ClassifyGuildRecruitment(text, raw, enabled, allowQuestionRecruit
         reasons[#reasons + 1] = "guild tag"
     end
     local hasRecruiting = ContainsAny(text, GUILD_RECRUITING)
+    local hasMembers = ContainsAny(text, MEMBER_SIGNALS)
+    local hasJoin = ContainsAny(text, JOIN_SIGNALS)
+    local hasDetails = ContainsAny(text, GUILD_DETAIL_SIGNALS)
+    if not hasGuildContext and hasRecruiting and hasMembers
+        and ((hasJoin and hasDetails) or #text >= 100) then
+        hasGuildContext = true
+        score = score + 2
+        reasons[#reasons + 1] = "inferred guild recruitment"
+    end
     if not hasRecruiting then
-        local hasMembers = ContainsAny(text, MEMBER_SIGNALS)
-        local hasJoin = ContainsAny(text, JOIN_SIGNALS)
         if hasGuildContext and hasMembers and hasJoin then
             score = score + 3
             reasons[#reasons + 1] = "guild/member/contact combination"
-        elseif hasGuildContext and hasJoin and ContainsAny(text, GUILD_DETAIL_SIGNALS) and #text >= 80 then
+        elseif hasGuildContext and hasJoin and hasDetails and #text >= 80 then
             score = score + 3
             reasons[#reasons + 1] = "guild schedule/contact combination"
         end

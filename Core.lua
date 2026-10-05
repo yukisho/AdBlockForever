@@ -82,14 +82,18 @@ local GUILD_RECRUITING = {
     "guild lf", "guild looking for", "looking for members", "seeking members", "recruiting everyone",
     "accepting anyone", "accepting players", "accepting members", "accepting new members",
     "join our guild", "join my guild", "would you like to join", "want to join", "like to join",
+    "anyone wanna join", "anyone want to join", "wanna join",
     "interested in joining", "are you looking for a guild", "guild invite",
     "we would love to have you", "we'd love to have you",
+    "players to build with us", "lf mature", "lf active players",
     "rekrutiert", "sucht mitglieder", "mitglieder gesucht", "gilde sucht",
     "guilde recrute", "recrutement guilde", "recherche des membres",
     "gremio recluta", "reclutando miembros", "busca miembros",
     "guilda recruta", "recrutando membros", "procura membros",
     "gilda recluta", "cerca membri", "reclutiamo",
     "gildia rekrutuje", "szuka członków", "szuka graczy",
+    "u potrazi smo", "tražimo igrače", "trazimo igrace", "tražimo članove", "trazimo clanove",
+    "primamo igrače", "primamo igrace", "primamo članove", "primamo clanove",
     "набор в гильди", "Набор в гильди", "гильдия набира", "Гильдия набира", "ищет игроков", "Ищет игроков", "набираем игроков", "Набираем игроков",
     "公会招募", "公會招募", "招募成员", "招募成員", "길드원 모집", "길드 모집",
 }
@@ -99,6 +103,7 @@ local MEMBER_SIGNALS = {
     "all roles", "any role", "everyone", "socials",
     "mitglieder", "spieler", "membres", "joueurs", "miembros", "jugadores", "membros", "jogadores",
     "membri", "giocatori", "członków", "graczy", "игроков", "участников", "成员", "成員", "玩家", "길드원",
+    "igračima", "igracima", "igrače", "igrace", "članove", "clanove",
 }
 
 local JOIN_SIGNALS = {
@@ -106,6 +111,7 @@ local JOIN_SIGNALS = {
     "whisper", "send a tell", "send me a message", "want more info", "pst", "pm for", "dm for", "dm me",
     "beitreten", "bewerben", "flüstern", "rejoignez", "postulez", "murmurez", "únete", "unete", "susurra",
     "junte-se", "sussurre", "unisciti", "candidati", "dołącz", "dolacz", "napisz", "вступай", "пиши", "加入我们", "加入我們", "加入", "문의",
+    "ako ste zainteresovani", "ako ste zainteresirani", "slobodno bacite w", "javite se", "šapnite", "sapnite",
 }
 
 local GUILD_DETAIL_SIGNALS = {
@@ -114,10 +120,20 @@ local GUILD_DETAIL_SIGNALS = {
     "рейд", "дискорд", "活动时间", "活動時間", "레이드",
 }
 
+local INTERESTED_CONTACT_SIGNALS = {
+    "pst if interested", "whisper if interested", "message if interested",
+    "message me if interested", "dm if interested", "dm me if interested",
+}
+
+local GROUP_PROMOTION_SIGNALS = {
+    "new player friendly", "active events", "organized", "non drama", "weekly pvp",
+    "farm runs", "caravans", "recipe grinds", "dungeons and raids", "dungeons raids",
+}
+
 local PROFESSION_SOLICIT_STRONG = {
     "lfw", "work for tips", "working for tips", "your mats", "your materials", "my mats", "my materials",
     "free with mats", "taking orders",
-    "open for orders", "crafting orders", "send order", "all recipes", "all patterns", "all crafts", "every recipe",
+    "open for orders", "open for business", "crafting orders", "send order", "all recipes", "all patterns", "all crafts", "every recipe",
     "every pattern", "can make", "can craft", "crafting for", "tips appreciated", "pst for", "whisper for", "pm for",
     "gegen mats", "gegen trinkgeld", "alle rezepte", "aufträge", "auftraege",
     "vos compos", "tous les patrons", "toutes les recettes", "commandes ouvertes",
@@ -494,6 +510,15 @@ local function ClassifyGuildRecruitment(text, raw, enabled, allowQuestionRecruit
     local hasMembers = ContainsAny(text, MEMBER_SIGNALS)
     local hasJoin = ContainsAny(text, JOIN_SIGNALS)
     local hasDetails = ContainsAny(text, GUILD_DETAIL_SIGNALS)
+    local hasInterestedContact = ContainsAny(text, INTERESTED_CONTACT_SIGNALS)
+    local hasGroupPromotion = ContainsAny(text, GROUP_PROMOTION_SIGNALS)
+    local hasDiscord = text:find("discord", 1, true) ~= nil
+    if not hasGuildContext and hasDiscord and hasInterestedContact
+        and hasGroupPromotion and #text >= 80 then
+        hasGuildContext = true
+        score = score + 4
+        reasons[#reasons + 1] = "structured group recruitment"
+    end
     if not hasGuildContext and hasRecruiting and hasMembers
         and ((hasJoin and hasDetails) or #text >= 100) then
         hasGuildContext = true

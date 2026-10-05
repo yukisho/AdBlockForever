@@ -1,9 +1,15 @@
 local ADDON_NAME, ABF = ...
 
+local IS_DEVELOPMENT = ADDON_NAME == "AdBlockForeverDev" or ABF.isDevelopment == true
+local DATABASE_NAME = IS_DEVELOPMENT and "AdBlockForeverDevDB" or "AdBlockForeverDB"
+local COMMAND = IS_DEVELOPMENT and "/abfdev" or "/abf"
+
 ABF.name = ADDON_NAME
-ABF.version = "0.1.0"
-ABF.displayName = "AdBlock Forever"
+ABF.isDevelopment = IS_DEVELOPMENT
+ABF.version = "0.3.0"
+ABF.displayName = IS_DEVELOPMENT and "AdBlock Forever Dev" or "AdBlock Forever"
 ABF.iconPath = "Interface\\AddOns\\" .. ADDON_NAME .. "\\Media\\Icon"
+ABF.slashCommand = COMMAND
 
 local initialized = false
 
@@ -251,52 +257,54 @@ local function DefaultDatabase()
 end
 
 local function EnsureDatabase()
-    if type(AdBlockForeverDB) ~= "table" then
-        AdBlockForeverDB = DefaultDatabase()
+    local database = _G[DATABASE_NAME]
+    if type(database) ~= "table" then
+        database = DefaultDatabase()
+        _G[DATABASE_NAME] = database
     end
     local defaults = DefaultDatabase()
     for key, value in pairs(defaults) do
-        if AdBlockForeverDB[key] == nil then
-            AdBlockForeverDB[key] = value
+        if database[key] == nil then
+            database[key] = value
         end
     end
-    if type(AdBlockForeverDB.professions) ~= "table" then
-        AdBlockForeverDB.professions = DefaultProfessionOptions()
+    if type(database.professions) ~= "table" then
+        database.professions = DefaultProfessionOptions()
     end
     for key in pairs(defaults.professions) do
-        if AdBlockForeverDB.professions[key] == nil then
-            AdBlockForeverDB.professions[key] = true
+        if database.professions[key] == nil then
+            database.professions[key] = true
         end
     end
-    if type(AdBlockForeverDB.allowedPlayers) ~= "table" then
-        AdBlockForeverDB.allowedPlayers = {}
+    if type(database.allowedPlayers) ~= "table" then
+        database.allowedPlayers = {}
     end
-    if type(AdBlockForeverDB.allowedPhrases) ~= "table" then
-        AdBlockForeverDB.allowedPhrases = {}
+    if type(database.allowedPhrases) ~= "table" then
+        database.allowedPhrases = {}
     end
-    if type(AdBlockForeverDB.minimap) ~= "table" then
-        AdBlockForeverDB.minimap = defaults.minimap
+    if type(database.minimap) ~= "table" then
+        database.minimap = defaults.minimap
     end
-    if type(AdBlockForeverDB.minimap.angle) ~= "number" then
-        AdBlockForeverDB.minimap.angle = defaults.minimap.angle
+    if type(database.minimap.angle) ~= "number" then
+        database.minimap.angle = defaults.minimap.angle
     end
-    if type(AdBlockForeverDB.minimap.hide) ~= "boolean" then
-        AdBlockForeverDB.minimap.hide = false
+    if type(database.minimap.hide) ~= "boolean" then
+        database.minimap.hide = false
     end
-    if type(AdBlockForeverDB.stats) ~= "table" then
-        AdBlockForeverDB.stats = defaults.stats
+    if type(database.stats) ~= "table" then
+        database.stats = defaults.stats
     end
     for key, value in pairs(defaults.stats) do
-        if type(AdBlockForeverDB.stats[key]) ~= "number" then
-            AdBlockForeverDB.stats[key] = value
+        if type(database.stats[key]) ~= "number" then
+            database.stats[key] = value
         end
     end
-    AdBlockForeverDB.version = 1
-    ABF.db = AdBlockForeverDB
+    database.version = 1
+    ABF.db = database
 end
 
 function ABF:Print(message)
-    print("|cffd9a441AdBlock Forever:|r " .. tostring(message))
+    print("|cffd9a441" .. self.displayName .. ":|r " .. tostring(message))
 end
 
 function ABF:GetProfessionLabel(key)
@@ -678,22 +686,29 @@ local function FindProfession(argument)
 end
 
 function ABF:ShowHelp()
-    self:Print("/abf - open settings")
-    self:Print("/abf on|off")
-    self:Print("/abf guild on|off | whispers on|off | professions on|off")
-    self:Print("/abf profession NAME on|off")
-    self:Print("/abf allowplayer NAME | unallowplayer NAME")
-    self:Print("/abf allowphrase TEXT | unallowphrase TEXT")
-    self:Print("/abf minimap show|hide | stats | test MESSAGE")
+    self:Print(COMMAND .. " - open settings")
+    self:Print(COMMAND .. " on|off")
+    self:Print(COMMAND .. " guild on|off | whispers on|off | professions on|off")
+    self:Print(COMMAND .. " profession NAME on|off")
+    self:Print(COMMAND .. " allowplayer NAME | unallowplayer NAME")
+    self:Print(COMMAND .. " allowphrase TEXT | unallowphrase TEXT")
+    self:Print(COMMAND .. " minimap show|hide | stats | test MESSAGE")
+    if IS_DEVELOPMENT then
+        self:Print(COMMAND .. " log | capture on|off | hoverdebug | clearlog")
+    end
 end
 
-SLASH_ADBLOCKFOREVER1 = "/abf"
-SLASH_ADBLOCKFOREVER2 = "/adblockforever"
-SlashCmdList.ADBLOCKFOREVER = function(message)
+local slashKey = IS_DEVELOPMENT and "ADBLOCKFOREVERDEV" or "ADBLOCKFOREVER"
+_G["SLASH_" .. slashKey .. "1"] = COMMAND
+_G["SLASH_" .. slashKey .. "2"] = IS_DEVELOPMENT and "/adblockforeverdev" or "/adblockforever"
+SlashCmdList[slashKey] = function(message)
     local command, argument = Trim(message):match("^(%S*)%s*(.-)$")
     command = Fold(command)
 
-    if command == "" or command == "show" then
+    if IS_DEVELOPMENT and ABF.HandleDeveloperCommand
+        and ABF:HandleDeveloperCommand(command, argument) then
+        return
+    elseif command == "" or command == "show" then
         ABF:ShowUI()
     elseif command == "on" or command == "off" then
         ABF:SetEnabled(command == "on")
@@ -707,7 +722,7 @@ SlashCmdList.ADBLOCKFOREVER = function(message)
         local name, toggle = argument:match("^(.-)%s+(on|off)%s*$")
         local key = name and FindProfession(name)
         if not key then
-            ABF:Print("Usage: /abf profession NAME on|off")
+            ABF:Print("Usage: " .. COMMAND .. " profession NAME on|off")
             return
         end
         ABF.db.professions[key] = toggle == "on"
@@ -715,7 +730,7 @@ SlashCmdList.ADBLOCKFOREVER = function(message)
         ABF:NotifyChanged()
     elseif command == "allowplayer" then
         if not ABF:AddAllowedPlayer(argument, false) then
-            ABF:Print("Usage: /abf allowplayer NAME")
+            ABF:Print("Usage: " .. COMMAND .. " allowplayer NAME")
         end
     elseif command == "unallowplayer" then
         if ABF:RemoveAllowedPlayer(argument) then
@@ -725,7 +740,7 @@ SlashCmdList.ADBLOCKFOREVER = function(message)
         end
     elseif command == "allowphrase" then
         if not ABF:AddAllowedPhrase(argument, false) then
-            ABF:Print("Usage: /abf allowphrase TEXT")
+            ABF:Print("Usage: " .. COMMAND .. " allowphrase TEXT")
         end
     elseif command == "unallowphrase" then
         if ABF:RemoveAllowedPhrase(argument) then
@@ -753,7 +768,7 @@ SlashCmdList.ADBLOCKFOREVER = function(message)
         ))
     elseif command == "test" then
         if argument == "" then
-            ABF:Print("Usage: /abf test MESSAGE")
+            ABF:Print("Usage: " .. COMMAND .. " test MESSAGE")
             return
         end
         local result, note = ABF:ClassifyMessage(argument)
@@ -781,6 +796,16 @@ end
 local frame = CreateFrame("Frame")
 ABF.eventFrame = frame
 
+local function IsAddonLoaded(addonName)
+    if C_AddOns and C_AddOns.IsAddOnLoaded then
+        return C_AddOns.IsAddOnLoaded(addonName)
+    end
+    if _G.IsAddOnLoaded then
+        return _G.IsAddOnLoaded(addonName)
+    end
+    return false
+end
+
 frame:SetScript("OnEvent", function(_, event, ...)
     if event == "ADDON_LOADED" then
         local loadedAddon = ...
@@ -788,13 +813,25 @@ frame:SetScript("OnEvent", function(_, event, ...)
             return
         end
         EnsureDatabase()
+        if ABF.InitializeDeveloperTools then
+            ABF:InitializeDeveloperTools()
+        end
+        local otherAddon = IS_DEVELOPMENT and "AdBlockForever" or "AdBlockForeverDev"
+        if IsAddonLoaded(otherAddon) then
+            ABF.conflictingAddon = otherAddon
+            return
+        end
         RegisterChatFilters()
         initialized = true
         if ABF.CreateMinimapButton then
             ABF:CreateMinimapButton()
         end
-    elseif event == "PLAYER_LOGIN" and initialized then
-        ABF:Print("Loaded. Use /abf to configure filtering.")
+    elseif event == "PLAYER_LOGIN" then
+        if ABF.conflictingAddon then
+            ABF:Print("Filtering is inactive because " .. ABF.conflictingAddon .. " is also enabled. Developer tools remain available; disable one build to test filtering.")
+        elseif initialized then
+            ABF:Print("Loaded. Use " .. COMMAND .. " to configure filtering.")
+        end
     end
 end)
 

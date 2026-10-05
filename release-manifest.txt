@@ -1,0 +1,9 @@
+# Files copied into the public AdBlockForever folder and release ZIP.
+# Keep this as an explicit allowlist. DevTools, tests, scripts, and Git files
+# are excluded unless deliberately added here.
+AdBlockForever.toc
+Core.lua
+UI.lua
+Media/Icon.tga
+README.md
+

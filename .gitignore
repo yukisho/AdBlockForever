@@ -1,2 +1,4 @@
 .history/
 *.code-workspace
+.release-staging/
+Releases/

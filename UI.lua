@@ -126,7 +126,7 @@ local function BuildUI()
         return
     end
 
-    window = CreateFrame("Frame", "AdBlockForeverFrame", UIParent, "BasicFrameTemplateWithInset")
+    window = CreateFrame("Frame", ABF.name .. "Frame", UIParent, "BasicFrameTemplateWithInset")
     window:SetSize(760, 680)
     window:SetPoint("CENTER")
     window:SetFrameStrata("DIALOG")
@@ -137,7 +137,7 @@ local function BuildUI()
     window:SetScript("OnDragStart", window.StartMoving)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:Hide()
-    window.TitleText:SetText("AdBlock Forever")
+    window.TitleText:SetText(ABF.displayName)
     table.insert(UISpecialFrames, window:GetName())
 
     local logo = window:CreateTexture(nil, "ARTWORK")
@@ -154,7 +154,7 @@ local function BuildUI()
     scopeText:SetPoint("TOPLEFT", 64, -57)
     scopeText:SetText("Filters public chat. Optional guild-recruitment filtering also applies to incoming whispers.")
 
-    mainChecks.enabled = CreateCheck(window, "Enable AdBlock Forever", 22, -82, function(self)
+    mainChecks.enabled = CreateCheck(window, "Enable " .. ABF.displayName, 22, -82, function(self)
         ABF.db.enabled = self:GetChecked() and true or false
         ABF:NotifyChanged()
     end)
@@ -238,7 +238,18 @@ local function BuildUI()
 
     local testHelp = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     testHelp:SetPoint("BOTTOMRIGHT", -18, 17)
-    testHelp:SetText("Diagnostic: /abf test MESSAGE")
+    testHelp:SetText("Diagnostic: " .. ABF.slashCommand .. " test MESSAGE")
+
+    if ABF.isDevelopment then
+        local developerButton = CreateButton(window, "Developer Log", 122, "BOTTOMRIGHT", window, "BOTTOMRIGHT", -14, 8)
+        developerButton:SetScript("OnClick", function()
+            if ABF.ShowDeveloperLog then
+                ABF:ShowDeveloperLog()
+            end
+        end)
+        testHelp:ClearAllPoints()
+        testHelp:SetPoint("RIGHT", developerButton, "LEFT", -12, 0)
+    end
 end
 
 function ABF:RefreshUI()
@@ -283,9 +294,18 @@ function ABF:RefreshUI()
 end
 
 function ABF:ShowUI()
+    if self.HideDeveloperLog then
+        self:HideDeveloperLog()
+    end
     BuildUI()
     self:RefreshUI()
     window:Show()
+end
+
+function ABF:HideUI()
+    if window then
+        window:Hide()
+    end
 end
 
 local function PositionMinimapButton()
@@ -329,7 +349,7 @@ function ABF:CreateMinimapButton()
         return
     end
 
-    minimapButton = CreateFrame("Button", "AdBlockForeverMinimapButton", Minimap)
+    minimapButton = CreateFrame("Button", ABF.name .. "MinimapButton", Minimap)
     minimapButton:SetSize(31, 31)
     minimapButton:SetFrameStrata("MEDIUM")
     minimapButton:SetFrameLevel(8)
@@ -352,6 +372,8 @@ function ABF:CreateMinimapButton()
     minimapButton:SetScript("OnClick", function(_, button)
         if button == "RightButton" then
             ABF:SetEnabled(not ABF.db.enabled)
+        elseif ABF.isDevelopment and IsShiftKeyDown and IsShiftKeyDown() and ABF.ShowDeveloperLog then
+            ABF:ShowDeveloperLog()
         else
             ABF:ShowUI()
         end
@@ -364,9 +386,12 @@ function ABF:CreateMinimapButton()
     end)
     minimapButton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("AdBlock Forever")
+        GameTooltip:AddLine(ABF.displayName)
         GameTooltip:AddLine("Left-click: Open settings", 1, 1, 1)
         GameTooltip:AddLine("Right-click: Enable or disable", 1, 1, 1)
+        if ABF.isDevelopment then
+            GameTooltip:AddLine("Shift-left-click: Open developer log", 1, 1, 1)
+        end
         GameTooltip:AddLine("Drag: Move around the minimap", 1, 1, 1)
         GameTooltip:Show()
     end)

@@ -4,6 +4,6 @@
 AdBlockForever.toc
 Core.lua
 UI.lua
+BlockedLog.lua
 Media/Icon.tga
 README.md
-

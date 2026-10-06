@@ -233,23 +233,37 @@ local function BuildUI()
 
     lastBlockedText = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     lastBlockedText:SetPoint("BOTTOMLEFT", 20, 17)
-    lastBlockedText:SetPoint("RIGHT", -170, 0)
+    lastBlockedText:SetPoint("RIGHT", -470, 0)
     lastBlockedText:SetJustifyH("LEFT")
 
     local testHelp = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     testHelp:SetPoint("BOTTOMRIGHT", -18, 17)
     testHelp:SetText("Diagnostic: " .. ABF.slashCommand .. " test MESSAGE")
 
+    local rightmostButton
     if ABF.isDevelopment then
-        local developerButton = CreateButton(window, "Developer Log", 122, "BOTTOMRIGHT", window, "BOTTOMRIGHT", -14, 8)
+        rightmostButton = CreateButton(window, "Developer Log", 122, "BOTTOMRIGHT", window, "BOTTOMRIGHT", -14, 8)
+        local developerButton = rightmostButton
         developerButton:SetScript("OnClick", function()
             if ABF.ShowDeveloperLog then
                 ABF:ShowDeveloperLog()
             end
         end)
-        testHelp:ClearAllPoints()
-        testHelp:SetPoint("RIGHT", developerButton, "LEFT", -12, 0)
     end
+
+    local blockedLogButton
+    if rightmostButton then
+        blockedLogButton = CreateButton(window, "Blocked Log", 110, "RIGHT", rightmostButton, "LEFT", -8, 0)
+    else
+        blockedLogButton = CreateButton(window, "Blocked Log", 110, "BOTTOMRIGHT", window, "BOTTOMRIGHT", -14, 8)
+    end
+    blockedLogButton:SetScript("OnClick", function()
+        if ABF.ShowBlockedLog then
+            ABF:ShowBlockedLog()
+        end
+    end)
+    testHelp:ClearAllPoints()
+    testHelp:SetPoint("RIGHT", blockedLogButton, "LEFT", -12, 0)
 end
 
 function ABF:RefreshUI()
@@ -296,6 +310,9 @@ end
 function ABF:ShowUI()
     if self.HideDeveloperLog then
         self:HideDeveloperLog()
+    end
+    if self.HideBlockedLog then
+        self:HideBlockedLog()
     end
     BuildUI()
     self:RefreshUI()

@@ -9,4 +9,5 @@
 DevTools\Bootstrap.lua
 Core.lua
 UI.lua
+BlockedLog.lua
 DevTools\MessageLogger.lua

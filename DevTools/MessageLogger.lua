@@ -19,6 +19,7 @@ local CHAT_EVENTS = {
 local initialized = false
 local recentEvents = {}
 local hoverButtons = {}
+local hookedRegions = {}
 local scanner
 local logWindow
 local exportBox
@@ -29,6 +30,14 @@ local diagnosticsCheck
 
 local function IsSecret(value)
     return issecretvalue and issecretvalue(value) or false
+end
+
+local function CanAccessValue(value)
+    if type(canaccessvalue) == "function" then
+        local ok, accessible = pcall(canaccessvalue, value)
+        return ok and accessible == true
+    end
+    return not IsSecret(value)
 end
 
 local function Trim(value)
@@ -70,7 +79,10 @@ local function IsNativeMouseOver(region)
         return false
     end
     local ok, result = pcall(MouseIsOver, region)
-    return ok and result and true or false
+    if not ok or not CanAccessValue(result) then
+        return false
+    end
+    return result == true
 end
 
 local function IsCursorInsideRegion(region)
@@ -89,10 +101,16 @@ local function IsCursorInsideRegion(region)
         and region.GetTop and region.GetBottom then
         local right, top
         left, right, top, bottom = region:GetLeft(), region:GetRight(), region:GetTop(), region:GetBottom()
-        if type(left) == "number" and type(right) == "number"
+        if CanAccessValue(left) and CanAccessValue(right)
+            and CanAccessValue(top) and CanAccessValue(bottom)
+            and type(left) == "number" and type(right) == "number"
             and type(top) == "number" and type(bottom) == "number" then
             width, height = right - left, top - bottom
         end
+    end
+    if not CanAccessValue(left) or not CanAccessValue(bottom)
+        or not CanAccessValue(width) or not CanAccessValue(height) then
+        return false
     end
     if type(left) ~= "number" or type(bottom) ~= "number"
         or type(width) ~= "number" or type(height) ~= "number"
@@ -100,10 +118,16 @@ local function IsCursorInsideRegion(region)
         return false
     end
     local scale = region.GetEffectiveScale and region:GetEffectiveScale()
+    if not CanAccessValue(scale) then
+        return false
+    end
     if type(scale) ~= "number" or scale <= 0 then
         scale = UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or 1
     end
     local cursorX, cursorY = GetCursorPosition()
+    if not CanAccessValue(cursorX) or not CanAccessValue(cursorY) then
+        return false
+    end
     if type(cursorX) ~= "number" or type(cursorY) ~= "number" then
         return false
     end
@@ -121,14 +145,24 @@ local function SafeRegionText(region)
         return nil
     end
     local isFontString = region.IsObjectType and region:IsObjectType("FontString")
+    if not CanAccessValue(isFontString) then
+        return nil
+    end
     if not isFontString and region.GetObjectType then
-        isFontString = region:GetObjectType() == "FontString"
+        local objectType = region:GetObjectType()
+        if not CanAccessValue(objectType) then
+            return nil
+        end
+        isFontString = objectType == "FontString"
     end
     if not isFontString then
         return nil
     end
-    if region.IsShown and not region:IsShown() then
-        return nil
+    if region.IsShown then
+        local shown = region:IsShown()
+        if CanAccessValue(shown) and not shown then
+            return nil
+        end
     end
     local text = region:GetText()
     if type(text) ~= "string" or IsSecret(text) or text == "" then
@@ -286,12 +320,17 @@ local function CaptureRenderedLine(renderedText, chatFrameName)
 end
 
 local function PositionHoverButton(button, chatFrame, region)
+    button:ClearAllPoints()
+    local anchored = pcall(button.SetPoint, button, "RIGHT", region, "RIGHT", -2, 0)
+    if anchored then
+        return true
+    end
     local _, lineY = region:GetCenter()
     local _, frameY = chatFrame:GetCenter()
-    if not lineY or not frameY then
+    if not CanAccessValue(lineY) or not CanAccessValue(frameY)
+        or type(lineY) ~= "number" or type(frameY) ~= "number" then
         return false
     end
-    button:ClearAllPoints()
     button:SetPoint("RIGHT", chatFrame, "RIGHT", -3, lineY - frameY)
     return true
 end
@@ -332,6 +371,48 @@ local function GetChatRegions(chatFrame)
     return { container:GetRegions() }
 end
 
+local function ShowHoverButtonForRegion(region, chatFrame)
+    if not ABF.db or not EnsureData().captureEnabled then
+        return
+    end
+    local text = SafeRegionText(region)
+    if not text then
+        return
+    end
+    local button = hoverButtons[chatFrame] or CreateHoverButton(chatFrame)
+    if PositionHoverButton(button, chatFrame, region) then
+        button.renderedText = text
+        button.lastSeen = GetTime and GetTime() or 0
+        button:Show()
+    end
+end
+
+local function AttachRegionHover(region, chatFrame)
+    if hookedRegions[region] or not region or not region.HookScript
+        or not region.SetMouseMotionEnabled then
+        return false
+    end
+    local ok = pcall(function()
+        if region.SetMouseClickEnabled then
+            region:SetMouseClickEnabled(false)
+        end
+        region:SetMouseMotionEnabled(true)
+        region:HookScript("OnEnter", function(self)
+            ShowHoverButtonForRegion(self, chatFrame)
+        end)
+        region:HookScript("OnLeave", function()
+            local button = hoverButtons[chatFrame]
+            if button then
+                button.lastSeen = GetTime and GetTime() or 0
+            end
+        end)
+    end)
+    if ok then
+        hookedRegions[region] = true
+    end
+    return ok
+end
+
 local function ScanChatFrame(chatFrame, now)
     local button = hoverButtons[chatFrame] or CreateHoverButton(chatFrame)
     if button:IsShown() and IsMouseOver(button) then
@@ -350,6 +431,9 @@ local function ScanChatFrame(chatFrame, now)
     if regions then
         for _, region in ipairs(regions) do
             local text = SafeRegionText(region)
+            if text then
+                AttachRegionHover(region, chatFrame)
+            end
             if text and IsMouseOver(region) and PositionHoverButton(button, chatFrame, region) then
                 button.renderedText = text
                 button.lastSeen = now
@@ -373,6 +457,7 @@ local function PrintHoverDiagnostics()
     local hoveredCount = 0
     local nativeHoveredCount = 0
     local geometryHoveredCount = 0
+    local hookedCount = 0
     for index = 1, (NUM_CHAT_WINDOWS or 10) do
         local chatFrame = _G["ChatFrame" .. index]
         if chatFrame and chatFrame:IsShown() then
@@ -382,6 +467,9 @@ local function PrintHoverDiagnostics()
             for _, region in ipairs(regions) do
                 if SafeRegionText(region) then
                     textCount = textCount + 1
+                    if hookedRegions[region] then
+                        hookedCount = hookedCount + 1
+                    end
                     local nativeHovered = IsNativeMouseOver(region)
                     local geometryHovered = IsCursorInsideRegion(region)
                     if nativeHovered then
@@ -398,10 +486,11 @@ local function PrintHoverDiagnostics()
         end
     end
     ABF:Print(string.format(
-        "Hover scan: %d visible chat frame(s), %d region(s), %d text line(s), %d hovered (native %d, geometry %d).",
+        "Hover scan: %d frame(s), %d region(s), %d text line(s), %d motion-hooked, %d hovered (native %d, geometry %d).",
         frameCount,
         regionCount,
         textCount,
+        hookedCount,
         hoveredCount,
         nativeHoveredCount,
         geometryHoveredCount
@@ -557,6 +646,9 @@ function ABF:ShowDeveloperLog(selectAll)
     end
     if self.HideUI then
         self:HideUI()
+    end
+    if self.HideBlockedLog then
+        self:HideBlockedLog()
     end
     CreateLogWindow()
     RefreshExport()

@@ -12,6 +12,7 @@ ABF.iconPath = "Interface\\AddOns\\" .. ADDON_NAME .. "\\Media\\Icon"
 ABF.slashCommand = COMMAND
 
 local initialized = false
+local BLOCKED_LOG_LIMIT = 500
 
 local CHAT_EVENTS = {
     "CHAT_MSG_CHANNEL",
@@ -92,6 +93,9 @@ local GUILD_RECRUITING = {
     "interested in joining", "are you looking for a guild", "guild invite",
     "we would love to have you", "we'd love to have you",
     "players to build with us", "lf mature", "lf active players",
+    "actively forming", "currently forming", "building our roster", "forming our roster",
+    "filling our roster", "rounding out our roster", "looking for all roles",
+    "looking for raiders", "looking for socials",
     "rekrutiert", "sucht mitglieder", "mitglieder gesucht", "gilde sucht",
     "guilde recrute", "recrutement guilde", "recherche des membres",
     "gremio recluta", "reclutando miembros", "busca miembros",
@@ -199,6 +203,21 @@ local function NormalizeText(value)
     return Trim(value)
 end
 
+local function CleanLoggedMessage(value)
+    value = Trim(value)
+    if value == "" then
+        return ""
+    end
+    value = value:gsub("|c%x%x%x%x%x%x%x%x", "")
+    value = value:gsub("|r", "")
+    value = value:gsub("|T.-|t", "")
+    value = value:gsub("|A.-|a", "")
+    value = value:gsub("|H.-|h(.-)|h", "%1")
+    value = value:gsub("[%c]", " ")
+    value = value:gsub("%s+", " ")
+    return Trim(value)
+end
+
 local function ContainsAny(text, needles)
     for _, needle in ipairs(needles) do
         if text:find(needle, 1, true) then
@@ -236,7 +255,7 @@ end
 
 local function DefaultDatabase()
     return {
-        version = 1,
+        version = 2,
         enabled = true,
         blockGuildRecruitment = true,
         blockWhisperRecruitment = true,
@@ -244,6 +263,8 @@ local function DefaultDatabase()
         professions = DefaultProfessionOptions(),
         allowedPlayers = {},
         allowedPhrases = {},
+        blockedLog = {},
+        blockedLogDetailed = true,
         minimap = {
             hide = false,
             angle = 225,
@@ -282,6 +303,15 @@ local function EnsureDatabase()
     if type(database.allowedPhrases) ~= "table" then
         database.allowedPhrases = {}
     end
+    if type(database.blockedLog) ~= "table" then
+        database.blockedLog = {}
+    end
+    while #database.blockedLog > BLOCKED_LOG_LIMIT do
+        table.remove(database.blockedLog, 1)
+    end
+    if type(database.blockedLogDetailed) ~= "boolean" then
+        database.blockedLogDetailed = true
+    end
     if type(database.minimap) ~= "table" then
         database.minimap = defaults.minimap
     end
@@ -299,7 +329,7 @@ local function EnsureDatabase()
             database.stats[key] = value
         end
     end
-    database.version = 1
+    database.version = 2
     ABF.db = database
 end
 
@@ -586,22 +616,61 @@ function ABF:ClassifyMessage(message, mode)
     return ClassifyGuildRecruitment(text, raw, guildEnabled, whisperMode)
 end
 
-function ABF:RecordBlocked(result, author, message)
+function ABF:GetBlockedLog()
+    return self.db and self.db.blockedLog or {}
+end
+
+function ABF:GetBlockedLogLimit()
+    return BLOCKED_LOG_LIMIT
+end
+
+function ABF:ClearBlockedLog()
+    if not self.db then
+        return
+    end
+    self.db.blockedLog = {}
+    self.recent = {}
+    self:NotifyChanged()
+end
+
+function ABF:RecordBlocked(result, author, message, event, lineID)
+    local now = GetTime and GetTime() or 0
+    local key
+    if lineID ~= nil and not IsSecret(lineID) then
+        key = tostring(event or "") .. ":" .. tostring(lineID)
+    else
+        key = tostring(event or "") .. "\031" .. tostring(author or "") .. "\031" .. tostring(message or "")
+    end
+    if self.lastBlockedKey == key and now - (self.lastBlockedAt or 0) < 1 then
+        return false
+    end
+    self.lastBlockedKey = key
+    self.lastBlockedAt = now
+
     self.db.stats.total = (self.db.stats.total or 0) + 1
     self.db.stats[result.category] = (self.db.stats[result.category] or 0) + 1
-    self.recent = self.recent or {}
-    table.insert(self.recent, 1, {
+    local entry = {
         category = result.category,
         label = result.label,
+        score = result.score,
         reason = result.reason,
         author = author or "Unknown",
-        message = NormalizeText(message),
+        message = CleanLoggedMessage(message),
+        event = event or "Unknown",
+        mode = event == "CHAT_MSG_WHISPER" and "whisper" or "public",
         at = time and time() or 0,
-    })
+    }
+    table.insert(self.db.blockedLog, entry)
+    while #self.db.blockedLog > BLOCKED_LOG_LIMIT do
+        table.remove(self.db.blockedLog, 1)
+    end
+    self.recent = self.recent or {}
+    table.insert(self.recent, 1, entry)
     while #self.recent > 20 do
         table.remove(self.recent)
     end
     self:NotifyChanged()
+    return true
 end
 
 local function ChatFilter(_, event, message, author, ...)
@@ -625,7 +694,8 @@ local function ChatFilter(_, event, message, author, ...)
         if whisperMode then
             result.label = "Guild recruitment whisper"
         end
-        ABF:RecordBlocked(result, author, message)
+        local lineID = select(9, ...)
+        ABF:RecordBlocked(result, author, message, event, lineID)
         return true
     end
     return false
@@ -649,6 +719,9 @@ end
 function ABF:NotifyChanged()
     if self.RefreshUI then
         self:RefreshUI()
+    end
+    if self.RefreshBlockedLog then
+        self:RefreshBlockedLog()
     end
     if self.RefreshMinimapButton then
         self:RefreshMinimapButton()
@@ -693,6 +766,7 @@ function ABF:ShowHelp()
     self:Print(COMMAND .. " allowplayer NAME | unallowplayer NAME")
     self:Print(COMMAND .. " allowphrase TEXT | unallowphrase TEXT")
     self:Print(COMMAND .. " minimap show|hide | stats | test MESSAGE")
+    self:Print(COMMAND .. " blockedlog | clearblockedlog")
     if IS_DEVELOPMENT then
         self:Print(COMMAND .. " log | capture on|off | hoverdebug | clearlog")
     end
@@ -766,6 +840,13 @@ SlashCmdList[slashKey] = function(message)
             ABF.db.stats.guild or 0,
             ABF.db.stats.profession or 0
         ))
+    elseif command == "blockedlog" or (command == "log" and not IS_DEVELOPMENT) then
+        if ABF.ShowBlockedLog then
+            ABF:ShowBlockedLog()
+        end
+    elseif command == "clearblockedlog" then
+        ABF:ClearBlockedLog()
+        ABF:Print("Blocked-message log cleared.")
     elseif command == "test" then
         if argument == "" then
             ABF:Print("Usage: " .. COMMAND .. " test MESSAGE")

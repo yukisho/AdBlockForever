@@ -20,6 +20,7 @@ Unlike a traditional ignore addon, AdBlock Forever filters only the detected adv
 - Movable settings window constrained to the game screen.
 - Persistent account-wide settings.
 - Statistics showing how many messages have been blocked.
+- Persistent blocked-message history with the sender, category, score, and matched detection signals.
 - Best-effort multilingual detection.
 
 ## Profession Controls
@@ -97,13 +98,30 @@ The settings window can also be opened with:
     /abf unallowphrase TEXT
     /abf minimap show|hide
     /abf stats
+    /abf blockedlog
+    /abf clearblockedlog
     /abf test MESSAGE
 
 The **/abf test** command checks how a message would be classified without hiding it or increasing your statistics. It also reports when a message would be blocked only in a whisper.
 
+## Blocked Message Log
+
+Open **Blocked Log** from the settings window or use `/abf blockedlog` to review
+messages hidden by the addon. Each detailed entry includes the sender, chat event,
+filter category, score, and the signals that caused the decision. This makes it
+easier to identify false positives and adjust player or phrase allowlists.
+
+The newest 500 blocked messages are retained across sessions. The window can
+also show messages without diagnostic details for convenient copying. Use
+`/abf clearblockedlog` or the window's **Clear Log** button to remove the history.
+
 ## Privacy
 
 AdBlock Forever works entirely on your client.
+
+Blocked-message history is stored locally in the addon's SavedVariables file and
+is never transmitted. Clearing the log removes that stored message history while
+leaving the aggregate blocked-message statistics unchanged.
 
 It does **not**:
 

@@ -144,7 +144,7 @@ local PROFESSION_SOLICIT_STRONG = {
     "lfw", "work for tips", "working for tips", "your mats", "your materials", "my mats", "my materials",
     "free with mats", "taking orders",
     "open for orders", "open for business", "crafting orders", "send order", "all recipes", "all patterns", "all crafts", "every recipe",
-    "every pattern", "can make", "can craft", "crafting for", "tips appreciated", "pst for", "whisper for", "pm for",
+    "every pattern", "can make", "can craft", "can install", "installing for", "crafting for", "tips appreciated", "pst for", "whisper for", "pm for",
     "gegen mats", "gegen trinkgeld", "alle rezepte", "aufträge", "auftraege",
     "vos compos", "tous les patrons", "toutes les recettes", "commandes ouvertes",
     "tus materiales", "todos los patrones", "todas las recetas", "acepto pedidos",
@@ -463,6 +463,20 @@ local function AnyDetectedProfessionEnabled(detected)
     return false
 end
 
+local function HasBracketedProfessionHeader(raw, detected)
+    local header = raw:match("^%s*%[([^%]]+)%]")
+    if not header then
+        return false
+    end
+    for key in pairs(detected) do
+        local profession = PROFESSIONS[key]
+        if profession and ContainsAny(header, profession.words) then
+            return true
+        end
+    end
+    return false
+end
+
 local function ClassifyProfession(text, raw)
     if not ABF.db.blockProfessionAds then
         return nil
@@ -486,6 +500,11 @@ local function ClassifyProfession(text, raw)
         reasons[#reasons + 1] = "profession name"
     end
 
+    if HasBracketedProfessionHeader(raw, detected) then
+        score = score + 3
+        reasons[#reasons + 1] = "profession ad header"
+    end
+
     local strong, strongPhrase = ContainsAny(text, PROFESSION_SOLICIT_STRONG)
     if strong then
         score = score + 4
@@ -500,6 +519,14 @@ local function ClassifyProfession(text, raw)
     if raw:find("%+%d") or text:find("%d+%s*gold") or text:find("%d+%s*g%s") then
         score = score + 1
         reasons[#reasons + 1] = "price/stat list"
+    end
+    if detected.enchanting and (
+        raw:find("%d+h%s*%+%d")
+        or raw:find("chest%s*:%s*%d")
+        or raw:find("bracer%s*:%s*%d")
+    ) then
+        score = score + 3
+        reasons[#reasons + 1] = "compact enchantment list"
     end
     if #text >= 90 then
         score = score + 1

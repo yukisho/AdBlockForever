@@ -12,6 +12,12 @@ local transferBox
 
 local SENSITIVITY_ORDER = { "conservative", "balanced", "aggressive" }
 local ALERT_ORDER = { "none", "notice", "sound", "both" }
+local SHORT_CATEGORY_LABELS = {
+    guild = "Guild",
+    profession = "Professions",
+    gold = "Gold sellers",
+    custom = "Custom phrases",
+}
 
 local function CreateButton(parent, text, width, point, relativeTo, relativePoint, x, y)
     local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
@@ -88,7 +94,7 @@ function ABF:RefreshAdvancedUI()
     RefreshPhrases()
     for category, button in pairs(sensitivityButtons) do
         local value = self:GetSensitivity(category)
-        button:SetText((self.categoryLabels[category] or category) .. ": " .. value:gsub("^%l", string.upper))
+        button:SetText(value:gsub("^%l", string.upper))
     end
     for category, checks in pairs(scopeChecks) do
         for scope, check in pairs(checks) do
@@ -149,11 +155,24 @@ local function CreateControlsPanel()
     local x = 12
     for _, category in ipairs({ "guild", "profession", "gold" }) do
         local categoryKey = category
-        local button = CreateButton(panel, "", 130, "TOPLEFT", panel, "TOPLEFT", x, -38)
+        local categoryLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        categoryLabel:SetPoint("TOPLEFT", x, -38)
+        categoryLabel:SetWidth(130)
+        categoryLabel:SetJustifyH("CENTER")
+        categoryLabel:SetText(SHORT_CATEGORY_LABELS[category])
+
+        local button = CreateButton(panel, "", 130, "TOPLEFT", panel, "TOPLEFT", x, -54)
         button:SetScript("OnClick", function()
             ABF:SetSensitivity(categoryKey, CycleValue(ABF:GetSensitivity(categoryKey), SENSITIVITY_ORDER))
             ABF:RefreshAdvancedUI()
         end)
+        button:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(ABF.categoryLabels[categoryKey])
+            GameTooltip:AddLine("Click to change filtering sensitivity.", 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        button:SetScript("OnLeave", function() GameTooltip:Hide() end)
         sensitivityButtons[category] = button
         x = x + 136
     end
@@ -162,20 +181,20 @@ local function CreateControlsPanel()
     local headingX = { 12, 154, 222, 276, 326 }
     for index, label in ipairs(headings) do
         local heading = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        heading:SetPoint("TOPLEFT", headingX[index], -76)
+        heading:SetPoint("TOPLEFT", headingX[index], -88)
         heading:SetText(label)
     end
 
     for row, category in ipairs(ABF.categoryOrder) do
         local label = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        label:SetPoint("TOPLEFT", 12, -98 - ((row - 1) * 27))
+        label:SetPoint("TOPLEFT", 12, -110 - ((row - 1) * 26))
         label:SetWidth(135)
         label:SetJustifyH("LEFT")
-        label:SetText(ABF.categoryLabels[category])
+        label:SetText(SHORT_CATEGORY_LABELS[category])
         scopeChecks[category] = {}
         for column, scope in ipairs(ABF.scopeOrder) do
             local categoryKey, scopeKey = category, scope
-            local check = CreateCheck(panel, "", 150 + ((column - 1) * 61), -94 - ((row - 1) * 27), function(self)
+            local check = CreateCheck(panel, "", 150 + ((column - 1) * 61), -106 - ((row - 1) * 26), function(self)
                 ABF:SetCategoryScope(categoryKey, scopeKey, self:GetChecked() and true or false)
             end)
             scopeChecks[category][scope] = check

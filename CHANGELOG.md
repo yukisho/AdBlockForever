@@ -1,5 +1,6 @@
 v0.4.0
 - Added gold seller spam blocking
+<<<<<<< HEAD
 - Increased detection triggers for messages
 
 ## 0.5.0 - In development
@@ -22,3 +23,6 @@ v0.4.0
 - Added normalized/de-obfuscated diagnostics and sensitivity comparisons to the developer log.
 - Added near-duplicate detection for captured developer messages.
 - Split the addon into focused Core and UI modules to make filter, database, command, and interface changes easier to locate and maintain.
+=======
+- Increased detection triggers for messages
+>>>>>>> e9be00b6c69cc1d8b055604bae2d3fa738f2f4b2

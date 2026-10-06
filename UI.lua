@@ -152,7 +152,7 @@ local function BuildUI()
 
     local scopeText = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     scopeText:SetPoint("TOPLEFT", 64, -57)
-    scopeText:SetText("Filters public chat. Optional guild-recruitment filtering also applies to incoming whispers.")
+    scopeText:SetText("Filters public chat. Gold spam and optional guild recruitment are also filtered in incoming whispers.")
 
     mainChecks.enabled = CreateCheck(window, "Enable " .. ABF.displayName, 22, -82, function(self)
         ABF.db.enabled = self:GetChecked() and true or false
@@ -172,6 +172,10 @@ local function BuildUI()
     end)
     mainChecks.whispers = CreateCheck(window, "Block guild recruitment whispers", 218, -110, function(self)
         ABF.db.blockWhisperRecruitment = self:GetChecked() and true or false
+        ABF:NotifyChanged()
+    end)
+    mainChecks.gold = CreateCheck(window, "Block gold seller spam", 436, -110, function(self)
+        ABF.db.blockGoldSpam = self:GetChecked() and true or false
         ABF:NotifyChanged()
     end)
 
@@ -272,17 +276,19 @@ function ABF:RefreshUI()
     end
 
     statusText:SetText(string.format(
-        "%s  |  %d messages blocked (%d guild, %d profession)",
+        "%s  |  %d messages blocked (%d guild, %d profession, %d gold)",
         self.db.enabled and "|cff55ff55Enabled|r" or "|cffff5555Disabled|r",
         self.db.stats.total or 0,
         self.db.stats.guild or 0,
-        self.db.stats.profession or 0
+        self.db.stats.profession or 0,
+        self.db.stats.gold or 0
     ))
 
     mainChecks.enabled:SetChecked(self.db.enabled)
     mainChecks.guild:SetChecked(self.db.blockGuildRecruitment)
     mainChecks.whispers:SetChecked(self.db.blockWhisperRecruitment)
     mainChecks.professions:SetChecked(self.db.blockProfessionAds)
+    mainChecks.gold:SetChecked(self.db.blockGoldSpam)
     mainChecks.minimap:SetChecked(not self.db.minimap.hide)
 
     for key, check in pairs(professionChecks) do

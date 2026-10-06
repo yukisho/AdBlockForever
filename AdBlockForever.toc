@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: AdBlock Forever
-## Notes: Hides guild recruitment and profession advertisements from public chat.
+## Notes: Hides guild recruitment, profession advertisements, and gold seller spam.
 ## Author: Gravvy
 ## Version: 0.3.0
 ## SavedVariables: AdBlockForeverDB

@@ -1,6 +1,6 @@
 # AdBlock Forever
 
-**AdBlock Forever** keeps public chat cleaner by automatically hiding guild recruitment messages and profession advertisements in **WoW Forever**. It can also block unsolicited guild-recruitment whispers.
+**AdBlock Forever** keeps chat cleaner by automatically hiding guild recruitment messages, profession advertisements, and gold seller spam in **WoW Forever**. It can also block unsolicited guild-recruitment whispers.
 
 Unlike a traditional ignore addon, AdBlock Forever filters only the detected advertisement. Other messages from the same player remain visible, and the addon never modifies your Blizzard ignore list.
 
@@ -8,11 +8,12 @@ Unlike a traditional ignore addon, AdBlock Forever filters only the detected adv
 
 - Automatically detects guild recruitment advertisements.
 - Automatically detects profession and crafting advertisements.
+- Automatically detects gold seller spam in public chat and incoming whispers.
 - Optionally blocks unsolicited guild-recruitment whispers.
 - Filters public channels, Say, and Yell.
 - Does not filter Guild, Officer, Party, Raid, or Instance chat.
-- Ordinary whispers and profession advertisements sent by whisper remain visible.
-- Separate toggles for public guild recruitment, recruitment whispers, and profession advertisements.
+- Ordinary whispers and profession advertisements sent by whisper remain visible unless they match the gold-spam filter.
+- Separate toggles for public guild recruitment, recruitment whispers, profession advertisements, and gold seller spam.
 - Individual controls for each profession.
 - Player allowlist for people whose messages should never be filtered.
 - Phrase allowlist for messages containing specific text.
@@ -56,14 +57,15 @@ The addon combines signals such as:
 - Crafting orders
 - Materials, recipes, fees, and tips
 - Contact phrases such as “PST,” “whisper,” or “message me”
+- Gold-sale language, real-money pricing, delivery claims, and obfuscated website/contact details
 
-A casual mention of a guild or profession is not normally enough to hide a message. Question-style guild invitations are treated more aggressively in whispers because mass recruiters often phrase advertisements as personal questions.
+A casual mention of a guild, profession, or gold is not normally enough to hide a message. Gold detection requires a combination of commercial signals, while question-style guild invitations are treated more aggressively in whispers because mass recruiters often phrase advertisements as personal questions.
 
 Detection recognizes common advertising phrases in English, German, French, Spanish, Portuguese, Italian, Polish, Russian, Simplified and Traditional Chinese, and Korean. Detection outside English is best effort and will continue to improve.
 
 ## Whisper Filtering
 
-Guild-recruitment whisper filtering is independent from public-chat filtering.
+Guild-recruitment whisper filtering is independent from public-chat filtering. Gold seller spam has its own toggle and is detected in both public chat and incoming whispers.
 
 You can:
 
@@ -91,6 +93,7 @@ The settings window can also be opened with:
     /abf guild on|off
     /abf whispers on|off
     /abf professions on|off
+    /abf gold on|off
     /abf profession NAME on|off
     /abf allowplayer NAME
     /abf unallowplayer NAME

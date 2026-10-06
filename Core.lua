@@ -12,6 +12,7 @@ ABF.iconPath = "Interface\\AddOns\\" .. ADDON_NAME .. "\\Media\\Icon"
 ABF.slashCommand = COMMAND
 
 local initialized = false
+local BLOCKED_LOG_LIMIT = 500
 
 local CHAT_EVENTS = {
     "CHAT_MSG_CHANNEL",
@@ -92,6 +93,9 @@ local GUILD_RECRUITING = {
     "interested in joining", "are you looking for a guild", "guild invite",
     "we would love to have you", "we'd love to have you",
     "players to build with us", "lf mature", "lf active players",
+    "actively forming", "currently forming", "building our roster", "forming our roster",
+    "filling our roster", "rounding out our roster", "looking for all roles",
+    "looking for raiders", "looking for socials",
     "rekrutiert", "sucht mitglieder", "mitglieder gesucht", "gilde sucht",
     "guilde recrute", "recrutement guilde", "recherche des membres",
     "gremio recluta", "reclutando miembros", "busca miembros",
@@ -140,7 +144,7 @@ local PROFESSION_SOLICIT_STRONG = {
     "lfw", "work for tips", "working for tips", "your mats", "your materials", "my mats", "my materials",
     "free with mats", "taking orders",
     "open for orders", "open for business", "crafting orders", "send order", "all recipes", "all patterns", "all crafts", "every recipe",
-    "every pattern", "can make", "can craft", "crafting for", "tips appreciated", "pst for", "whisper for", "pm for",
+    "every pattern", "can make", "can craft", "can install", "installing for", "crafting for", "tips appreciated", "pst for", "whisper for", "pm for",
     "gegen mats", "gegen trinkgeld", "alle rezepte", "aufträge", "auftraege",
     "vos compos", "tous les patrons", "toutes les recettes", "commandes ouvertes",
     "tus materiales", "todos los patrones", "todas las recetas", "acepto pedidos",
@@ -162,6 +166,49 @@ local PROFESSION_SOLICIT_LIGHT = {
 local PROFESSION_REQUEST_PREFIXES = {
     "need ", "looking for ", "lf ", "wtb ", "can anyone ", "anyone able ", "who can ", "seeking ",
     "suche ", "cherche ", "busco ", "procuro ", "cerco ", "ищу ", "Ищу ",
+}
+
+local GOLD_WORDS = {
+    "gold", "g0ld", "wow gold", "wow g0ld",
+    "oro", "ouro", "золото", "золота", "金币", "金幣", "골드",
+}
+
+local GOLD_SALE_STRONG = {
+    "wts gold", "wts wow gold", "selling gold", "sell wow gold", "gold for sale", "wow gold for sale",
+    "vendo oro", "venta de oro", "vendo ouro", "venda de ouro",
+    "gold verkaufen", "gold zu verkaufen", "vente d or", "продам золото", "продажа золота",
+    "出售金币", "出售金幣", "卖金币", "賣金幣", "골드 판매",
+}
+
+local GOLD_SALE_SIGNALS = {
+    "buy gold", "buy wow gold", "buy cheap gold", "purchase gold", "order gold",
+    "cheap gold", "cheap wow gold", "gold service", "gold shop", "gold store", "gold delivery",
+    "comprar oro", "oro barato", "comprar ouro", "ouro barato", "comprare oro",
+    "gold kaufen", "billiges gold", "acheter de l or", "or pas cher",
+    "купить золото", "дешевое золото", "дешёвое золото",
+    "购买金币", "購買金幣", "买金币", "買金幣", "便宜金币", "便宜金幣", "골드 구매", "싼 골드",
+}
+
+local GOLD_MARKETING_SIGNALS = {
+    "instant delivery", "fast delivery", "quick delivery", "safe delivery", "delivery in minutes",
+    "best price", "lowest price", "low price", "special offer", "discount", "coupon",
+    "trusted seller", "trusted service", "risk free", "guaranteed", "in stock", "24 7 service",
+    "entrega inmediata", "entrega rápida", "entrega rapida", "mejor precio", "precio barato",
+    "livraison rapide", "meilleur prix", "sofortige lieferung", "bester preis",
+}
+
+local GOLD_CONTACT_SIGNALS = {
+    "visit our site", "visit our website", "our website", "order online", "live chat",
+    "contact seller", "contact us", "add discord", "discord gg", "telegram", "whatsapp",
+}
+
+local REAL_MONEY_SIGNALS = {
+    " usd", "usd ", " eur", "eur ", "paypal", "cashapp", "cash app", "venmo",
+    "bitcoin", "crypto", "credit card", "real money",
+}
+
+local GOLD_DOMAIN_SUFFIXES = {
+    "com", "net", "org", "gg", "cc", "cn", "shop", "store", "site", "xyz",
 }
 
 local function IsSecret(value)
@@ -195,6 +242,21 @@ local function NormalizeText(value)
     value = value:gsub("\226\128\141", "")
     value = value:gsub("[%c]", " ")
     value = value:gsub("[%p]", " ")
+    value = value:gsub("%s+", " ")
+    return Trim(value)
+end
+
+local function CleanLoggedMessage(value)
+    value = Trim(value)
+    if value == "" then
+        return ""
+    end
+    value = value:gsub("|c%x%x%x%x%x%x%x%x", "")
+    value = value:gsub("|r", "")
+    value = value:gsub("|T.-|t", "")
+    value = value:gsub("|A.-|a", "")
+    value = value:gsub("|H.-|h(.-)|h", "%1")
+    value = value:gsub("[%c]", " ")
     value = value:gsub("%s+", " ")
     return Trim(value)
 end
@@ -236,14 +298,17 @@ end
 
 local function DefaultDatabase()
     return {
-        version = 1,
+        version = 3,
         enabled = true,
         blockGuildRecruitment = true,
         blockWhisperRecruitment = true,
         blockProfessionAds = true,
+        blockGoldSpam = true,
         professions = DefaultProfessionOptions(),
         allowedPlayers = {},
         allowedPhrases = {},
+        blockedLog = {},
+        blockedLogDetailed = true,
         minimap = {
             hide = false,
             angle = 225,
@@ -252,6 +317,7 @@ local function DefaultDatabase()
             total = 0,
             guild = 0,
             profession = 0,
+            gold = 0,
         },
     }
 end
@@ -282,6 +348,15 @@ local function EnsureDatabase()
     if type(database.allowedPhrases) ~= "table" then
         database.allowedPhrases = {}
     end
+    if type(database.blockedLog) ~= "table" then
+        database.blockedLog = {}
+    end
+    while #database.blockedLog > BLOCKED_LOG_LIMIT do
+        table.remove(database.blockedLog, 1)
+    end
+    if type(database.blockedLogDetailed) ~= "boolean" then
+        database.blockedLogDetailed = true
+    end
     if type(database.minimap) ~= "table" then
         database.minimap = defaults.minimap
     end
@@ -299,7 +374,7 @@ local function EnsureDatabase()
             database.stats[key] = value
         end
     end
-    database.version = 1
+    database.version = 3
     ABF.db = database
 end
 
@@ -433,6 +508,20 @@ local function AnyDetectedProfessionEnabled(detected)
     return false
 end
 
+local function HasBracketedProfessionHeader(raw, detected)
+    local header = raw:match("^%s*%[([^%]]+)%]")
+    if not header then
+        return false
+    end
+    for key in pairs(detected) do
+        local profession = PROFESSIONS[key]
+        if profession and ContainsAny(header, profession.words) then
+            return true
+        end
+    end
+    return false
+end
+
 local function ClassifyProfession(text, raw)
     if not ABF.db.blockProfessionAds then
         return nil
@@ -456,6 +545,11 @@ local function ClassifyProfession(text, raw)
         reasons[#reasons + 1] = "profession name"
     end
 
+    if HasBracketedProfessionHeader(raw, detected) then
+        score = score + 3
+        reasons[#reasons + 1] = "profession ad header"
+    end
+
     local strong, strongPhrase = ContainsAny(text, PROFESSION_SOLICIT_STRONG)
     if strong then
         score = score + 4
@@ -470,6 +564,14 @@ local function ClassifyProfession(text, raw)
     if raw:find("%+%d") or text:find("%d+%s*gold") or text:find("%d+%s*g%s") then
         score = score + 1
         reasons[#reasons + 1] = "price/stat list"
+    end
+    if detected.enchanting and (
+        raw:find("%d+h%s*%+%d")
+        or raw:find("chest%s*:%s*%d")
+        or raw:find("bracer%s*:%s*%d")
+    ) then
+        score = score + 3
+        reasons[#reasons + 1] = "compact enchantment list"
     end
     if #text >= 90 then
         score = score + 1
@@ -489,6 +591,130 @@ local function ClassifyProfession(text, raw)
     return {
         category = "profession",
         label = table.concat(labels, ", "),
+        score = score,
+        reason = table.concat(reasons, ", "),
+    }
+end
+
+local function CompactSpamText(raw)
+    local compact = raw:gsub("0", "o"):gsub("1", "i")
+    compact = compact:gsub("[^%w]", "")
+    return compact
+end
+
+local function HasGoldDomain(raw, text, compact)
+    if compact:find("www", 1, true)
+        or compact:find("dotcom", 1, true)
+        or compact:find("dotnet", 1, true)
+        or compact:find("discordgg", 1, true) then
+        return true, "website/contact"
+    end
+    if text:find("http ", 1, true) or text:find("https ", 1, true) then
+        return true, "website/contact"
+    end
+    for _, suffix in ipairs(GOLD_DOMAIN_SUFFIXES) do
+        if raw:find("[%w%-]+%s*[%.,]%s*" .. suffix .. "%f[%A]") then
+            return true, "website/contact"
+        end
+    end
+    return false
+end
+
+local function HasRealMoneySignal(text, raw)
+    local found, phrase = ContainsAny(text, REAL_MONEY_SIGNALS)
+    if found then
+        return true, phrase
+    end
+    if raw:find("$", 1, true) or raw:find("€", 1, true) or raw:find("£", 1, true) then
+        return true, "real-money price"
+    end
+    return false
+end
+
+local function ClassifyGoldSpam(text, raw)
+    if not ABF.db.blockGoldSpam then
+        return nil
+    end
+
+    local compact = CompactSpamText(raw)
+    local strong, strongPhrase = ContainsAny(text, GOLD_SALE_STRONG)
+    local sale, salePhrase = ContainsAny(text, GOLD_SALE_SIGNALS)
+    local domain, domainPhrase = HasGoldDomain(raw, text, compact)
+    local contact, contactPhrase = ContainsAny(text, GOLD_CONTACT_SIGNALS)
+    local marketing, marketingPhrase = ContainsAny(text, GOLD_MARKETING_SIGNALS)
+    local realMoney, moneyPhrase = HasRealMoneySignal(text, raw)
+    local hasGold, goldPhrase = ContainsAny(text, GOLD_WORDS)
+    if not hasGold and raw:find("g[%s%p]*[o0][%s%p]*l[%s%p]*d") then
+        hasGold = true
+        goldPhrase = "obfuscated gold"
+    end
+    if not hasGold and (strong or sale) then
+        hasGold = true
+        goldPhrase = "gold sale phrase"
+    end
+    if not hasGold and realMoney and raw:find("%f[%d]%d[%d%.,]*%s*k?g%f[%A]") then
+        hasGold = true
+        goldPhrase = "gold amount"
+    end
+    if not hasGold then
+        return nil
+    end
+
+    local score = 2
+    local reasons = { goldPhrase }
+    local hasCommercialSignal = false
+
+    if strong then
+        score = score + 7
+        hasCommercialSignal = true
+        reasons[#reasons + 1] = strongPhrase
+    end
+
+    if sale then
+        score = score + 4
+        hasCommercialSignal = true
+        reasons[#reasons + 1] = salePhrase
+    end
+    if not sale and (
+        compact:find("buygold", 1, true)
+        or compact:find("buywowgold", 1, true)
+        or compact:find("cheapgold", 1, true)
+        or compact:find("sellgold", 1, true)
+        or compact:find("goldforsale", 1, true)
+    ) then
+        score = score + 4
+        hasCommercialSignal = true
+        reasons[#reasons + 1] = "obfuscated sale phrase"
+    end
+
+    if domain then
+        score = score + 3
+        hasCommercialSignal = true
+        reasons[#reasons + 1] = domainPhrase
+    end
+
+    if contact then
+        score = score + 2
+        hasCommercialSignal = true
+        reasons[#reasons + 1] = contactPhrase
+    end
+
+    if marketing then
+        score = score + 2
+        reasons[#reasons + 1] = marketingPhrase
+    end
+
+    if realMoney then
+        score = score + 3
+        reasons[#reasons + 1] = moneyPhrase
+    end
+
+    if not hasCommercialSignal or score < 7 then
+        return nil
+    end
+    return {
+        category = "gold",
+        label = "Gold seller spam",
         score = score,
         reason = table.concat(reasons, ", "),
     }
@@ -570,6 +796,11 @@ function ABF:ClassifyMessage(message, mode)
         return nil, "allowed phrase"
     end
 
+    local gold = ClassifyGoldSpam(text, raw)
+    if gold then
+        return gold
+    end
+
     if mode ~= "guild-whisper" then
         local profession = ClassifyProfession(text, raw)
         if profession then
@@ -586,22 +817,61 @@ function ABF:ClassifyMessage(message, mode)
     return ClassifyGuildRecruitment(text, raw, guildEnabled, whisperMode)
 end
 
-function ABF:RecordBlocked(result, author, message)
+function ABF:GetBlockedLog()
+    return self.db and self.db.blockedLog or {}
+end
+
+function ABF:GetBlockedLogLimit()
+    return BLOCKED_LOG_LIMIT
+end
+
+function ABF:ClearBlockedLog()
+    if not self.db then
+        return
+    end
+    self.db.blockedLog = {}
+    self.recent = {}
+    self:NotifyChanged()
+end
+
+function ABF:RecordBlocked(result, author, message, event, lineID)
+    local now = GetTime and GetTime() or 0
+    local key
+    if lineID ~= nil and not IsSecret(lineID) then
+        key = tostring(event or "") .. ":" .. tostring(lineID)
+    else
+        key = tostring(event or "") .. "\031" .. tostring(author or "") .. "\031" .. tostring(message or "")
+    end
+    if self.lastBlockedKey == key and now - (self.lastBlockedAt or 0) < 1 then
+        return false
+    end
+    self.lastBlockedKey = key
+    self.lastBlockedAt = now
+
     self.db.stats.total = (self.db.stats.total or 0) + 1
     self.db.stats[result.category] = (self.db.stats[result.category] or 0) + 1
-    self.recent = self.recent or {}
-    table.insert(self.recent, 1, {
+    local entry = {
         category = result.category,
         label = result.label,
+        score = result.score,
         reason = result.reason,
         author = author or "Unknown",
-        message = NormalizeText(message),
+        message = CleanLoggedMessage(message),
+        event = event or "Unknown",
+        mode = event == "CHAT_MSG_WHISPER" and "whisper" or "public",
         at = time and time() or 0,
-    })
+    }
+    table.insert(self.db.blockedLog, entry)
+    while #self.db.blockedLog > BLOCKED_LOG_LIMIT do
+        table.remove(self.db.blockedLog, 1)
+    end
+    self.recent = self.recent or {}
+    table.insert(self.recent, 1, entry)
     while #self.recent > 20 do
         table.remove(self.recent)
     end
     self:NotifyChanged()
+    return true
 end
 
 local function ChatFilter(_, event, message, author, ...)
@@ -609,7 +879,7 @@ local function ChatFilter(_, event, message, author, ...)
         return false
     end
     local whisperMode = event == "CHAT_MSG_WHISPER"
-    if whisperMode and not ABF.db.blockWhisperRecruitment then
+    if whisperMode and not ABF.db.blockWhisperRecruitment and not ABF.db.blockGoldSpam then
         return false
     end
     local guid = select(10, ...)
@@ -622,10 +892,11 @@ local function ChatFilter(_, event, message, author, ...)
     end
     local result = ABF:ClassifyMessage(message, whisperMode and "guild-whisper" or nil)
     if result then
-        if whisperMode then
+        if whisperMode and result.category == "guild" then
             result.label = "Guild recruitment whisper"
         end
-        ABF:RecordBlocked(result, author, message)
+        local lineID = select(9, ...)
+        ABF:RecordBlocked(result, author, message, event, lineID)
         return true
     end
     return false
@@ -649,6 +920,9 @@ end
 function ABF:NotifyChanged()
     if self.RefreshUI then
         self:RefreshUI()
+    end
+    if self.RefreshBlockedLog then
+        self:RefreshBlockedLog()
     end
     if self.RefreshMinimapButton then
         self:RefreshMinimapButton()
@@ -688,11 +962,12 @@ end
 function ABF:ShowHelp()
     self:Print(COMMAND .. " - open settings")
     self:Print(COMMAND .. " on|off")
-    self:Print(COMMAND .. " guild on|off | whispers on|off | professions on|off")
+    self:Print(COMMAND .. " guild on|off | whispers on|off | professions on|off | gold on|off")
     self:Print(COMMAND .. " profession NAME on|off")
     self:Print(COMMAND .. " allowplayer NAME | unallowplayer NAME")
     self:Print(COMMAND .. " allowphrase TEXT | unallowphrase TEXT")
     self:Print(COMMAND .. " minimap show|hide | stats | test MESSAGE")
+    self:Print(COMMAND .. " blockedlog | clearblockedlog")
     if IS_DEVELOPMENT then
         self:Print(COMMAND .. " log | capture on|off | hoverdebug | clearlog")
     end
@@ -718,6 +993,8 @@ SlashCmdList[slashKey] = function(message)
         SetToggle("blockWhisperRecruitment", argument, "Guild recruitment whisper filtering")
     elseif command == "professions" or command == "professionads" then
         SetToggle("blockProfessionAds", argument, "Profession advertisement filtering")
+    elseif command == "gold" or command == "goldspam" then
+        SetToggle("blockGoldSpam", argument, "Gold seller spam filtering")
     elseif command == "profession" then
         local name, toggle = argument:match("^(.-)%s+(on|off)%s*$")
         local key = name and FindProfession(name)
@@ -761,11 +1038,19 @@ SlashCmdList[slashKey] = function(message)
         ABF:NotifyChanged()
     elseif command == "stats" then
         ABF:Print(string.format(
-            "%d blocked: %d guild recruitment, %d profession ads.",
+            "%d blocked: %d guild recruitment, %d profession ads, %d gold seller spam.",
             ABF.db.stats.total or 0,
             ABF.db.stats.guild or 0,
-            ABF.db.stats.profession or 0
+            ABF.db.stats.profession or 0,
+            ABF.db.stats.gold or 0
         ))
+    elseif command == "blockedlog" or (command == "log" and not IS_DEVELOPMENT) then
+        if ABF.ShowBlockedLog then
+            ABF:ShowBlockedLog()
+        end
+    elseif command == "clearblockedlog" then
+        ABF:ClearBlockedLog()
+        ABF:Print("Blocked-message log cleared.")
     elseif command == "test" then
         if argument == "" then
             ABF:Print("Usage: " .. COMMAND .. " test MESSAGE")

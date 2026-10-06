@@ -152,7 +152,7 @@ local function BuildUI()
 
     local scopeText = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     scopeText:SetPoint("TOPLEFT", 64, -57)
-    scopeText:SetText("Filters public chat. Optional guild-recruitment filtering also applies to incoming whispers.")
+    scopeText:SetText("Filters public chat. Gold spam and optional guild recruitment are also filtered in incoming whispers.")
 
     mainChecks.enabled = CreateCheck(window, "Enable " .. ABF.displayName, 22, -82, function(self)
         ABF.db.enabled = self:GetChecked() and true or false
@@ -172,6 +172,10 @@ local function BuildUI()
     end)
     mainChecks.whispers = CreateCheck(window, "Block guild recruitment whispers", 218, -110, function(self)
         ABF.db.blockWhisperRecruitment = self:GetChecked() and true or false
+        ABF:NotifyChanged()
+    end)
+    mainChecks.gold = CreateCheck(window, "Block gold seller spam", 436, -110, function(self)
+        ABF.db.blockGoldSpam = self:GetChecked() and true or false
         ABF:NotifyChanged()
     end)
 
@@ -233,23 +237,37 @@ local function BuildUI()
 
     lastBlockedText = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     lastBlockedText:SetPoint("BOTTOMLEFT", 20, 17)
-    lastBlockedText:SetPoint("RIGHT", -170, 0)
+    lastBlockedText:SetPoint("RIGHT", -470, 0)
     lastBlockedText:SetJustifyH("LEFT")
 
     local testHelp = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     testHelp:SetPoint("BOTTOMRIGHT", -18, 17)
     testHelp:SetText("Diagnostic: " .. ABF.slashCommand .. " test MESSAGE")
 
+    local rightmostButton
     if ABF.isDevelopment then
-        local developerButton = CreateButton(window, "Developer Log", 122, "BOTTOMRIGHT", window, "BOTTOMRIGHT", -14, 8)
+        rightmostButton = CreateButton(window, "Developer Log", 122, "BOTTOMRIGHT", window, "BOTTOMRIGHT", -14, 8)
+        local developerButton = rightmostButton
         developerButton:SetScript("OnClick", function()
             if ABF.ShowDeveloperLog then
                 ABF:ShowDeveloperLog()
             end
         end)
-        testHelp:ClearAllPoints()
-        testHelp:SetPoint("RIGHT", developerButton, "LEFT", -12, 0)
     end
+
+    local blockedLogButton
+    if rightmostButton then
+        blockedLogButton = CreateButton(window, "Blocked Log", 110, "RIGHT", rightmostButton, "LEFT", -8, 0)
+    else
+        blockedLogButton = CreateButton(window, "Blocked Log", 110, "BOTTOMRIGHT", window, "BOTTOMRIGHT", -14, 8)
+    end
+    blockedLogButton:SetScript("OnClick", function()
+        if ABF.ShowBlockedLog then
+            ABF:ShowBlockedLog()
+        end
+    end)
+    testHelp:ClearAllPoints()
+    testHelp:SetPoint("RIGHT", blockedLogButton, "LEFT", -12, 0)
 end
 
 function ABF:RefreshUI()
@@ -258,17 +276,19 @@ function ABF:RefreshUI()
     end
 
     statusText:SetText(string.format(
-        "%s  |  %d messages blocked (%d guild, %d profession)",
+        "%s  |  %d messages blocked (%d guild, %d profession, %d gold)",
         self.db.enabled and "|cff55ff55Enabled|r" or "|cffff5555Disabled|r",
         self.db.stats.total or 0,
         self.db.stats.guild or 0,
-        self.db.stats.profession or 0
+        self.db.stats.profession or 0,
+        self.db.stats.gold or 0
     ))
 
     mainChecks.enabled:SetChecked(self.db.enabled)
     mainChecks.guild:SetChecked(self.db.blockGuildRecruitment)
     mainChecks.whispers:SetChecked(self.db.blockWhisperRecruitment)
     mainChecks.professions:SetChecked(self.db.blockProfessionAds)
+    mainChecks.gold:SetChecked(self.db.blockGoldSpam)
     mainChecks.minimap:SetChecked(not self.db.minimap.hide)
 
     for key, check in pairs(professionChecks) do
@@ -296,6 +316,9 @@ end
 function ABF:ShowUI()
     if self.HideDeveloperLog then
         self:HideDeveloperLog()
+    end
+    if self.HideBlockedLog then
+        self:HideBlockedLog()
     end
     BuildUI()
     self:RefreshUI()

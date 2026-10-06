@@ -22,3 +22,4 @@ v0.4.0
 - Added normalized/de-obfuscated diagnostics and sensitivity comparisons to the developer log.
 - Added near-duplicate detection for captured developer messages.
 - Split the addon into focused Core and UI modules to make filter, database, command, and interface changes easier to locate and maintain.
+- Fixed sensitivity and category labels overflowing their controls in the Rules & Controls window.

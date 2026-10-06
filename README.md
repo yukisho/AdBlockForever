@@ -14,14 +14,19 @@ Unlike a traditional ignore addon, AdBlock Forever filters only the detected adv
 - Does not filter Guild, Officer, Party, Raid, or Instance chat.
 - Ordinary whispers and profession advertisements sent by whisper remain visible unless they match the gold-spam filter.
 - Separate toggles for public guild recruitment, recruitment whispers, profession advertisements, and gold seller spam.
+- Conservative, Balanced, and Aggressive sensitivity for each automatic filter.
+- Independent Channel, Say, Yell, and Whisper scope for every filter category.
 - Individual controls for each profession.
-- Player allowlist for people whose messages should never be filtered.
+- Player whitelist for people whose messages should never be filtered, regardless of content.
 - Phrase allowlist for messages containing specific text.
+- Custom blocked phrases for server-specific spam.
 - Movable minimap button that follows the minimap rim.
 - Movable settings window constrained to the game screen.
 - Persistent account-wide settings.
 - Statistics showing how many messages have been blocked.
 - Persistent blocked-message history with the sender, category, score, and matched detection signals.
+- Searchable blocked log with category filters and false-positive correction actions.
+- Settings and rule import/export, targeted reset controls, and optional blocked-whisper alerts.
 - Best-effort multilingual detection.
 
 ## Profession Controls
@@ -74,7 +79,24 @@ You can:
 - Block only public recruitment messages.
 - Disable both while continuing to filter profession advertisements.
 
-Player and phrase allowlists always take priority.
+The player whitelist and phrase allowlist always take priority.
+
+## Rules & Controls
+
+Open **Rules & Controls** from the main settings window or use `/abf advanced`.
+
+This window provides:
+
+- Custom plain-text blocked phrases
+- Per-filter sensitivity
+- Per-category controls for public channels, Say, Yell, and Whispers
+- Optional notice, sound, or combined alerts when a whisper is hidden
+- Settings import/export
+- Separate reset buttons for filters, lists, and lifetime statistics
+
+Settings exports include filter settings, profession choices, chat scopes, the
+player whitelist, and custom allow/block phrases. Blocked-message history and
+statistics are deliberately excluded.
 
 ## Minimap Button
 
@@ -95,12 +117,18 @@ The settings window can also be opened with:
     /abf professions on|off
     /abf gold on|off
     /abf profession NAME on|off
-    /abf allowplayer NAME
-    /abf unallowplayer NAME
+    /abf whitelist NAME
+    /abf unwhitelist NAME
     /abf allowphrase TEXT
     /abf unallowphrase TEXT
+    /abf blockphrase TEXT
+    /abf unblockphrase TEXT
+    /abf sensitivity CATEGORY conservative|balanced|aggressive
+    /abf scope CATEGORY channel|say|yell|whisper on|off
+    /abf advanced
     /abf minimap show|hide
     /abf stats
+    /abf last
     /abf blockedlog
     /abf clearblockedlog
     /abf test MESSAGE
@@ -110,9 +138,13 @@ The **/abf test** command checks how a message would be classified without hidin
 ## Blocked Message Log
 
 Open **Blocked Log** from the settings window or use `/abf blockedlog` to review
-messages hidden by the addon. Each detailed entry includes the sender, chat event,
-filter category, score, and the signals that caused the decision. This makes it
-easier to identify false positives and adjust player or phrase allowlists.
+messages hidden by the addon. Search the history, cycle through categories, and
+navigate individual entries. Each detailed entry includes the addon version,
+sender, chat event, category, score, and scored detection signals.
+
+The selected entry can be copied, marked as a false positive, given an allowed
+phrase, or have its sender added to the player whitelist. `/abf last` prints the
+most recently blocked message, which also appears in the minimap tooltip.
 
 The newest 500 blocked messages are retained across sessions. The window can
 also show messages without diagnostic details for convenient copying. Use
@@ -145,6 +177,6 @@ Only messages matching the enabled filters are hidden.
 
 ## Feedback
 
-Automatic advertisement detection will never be perfect for every server, language, or writing style. If you encounter a false positive, add the player or a distinctive part of the message to an allowlist.
+Automatic advertisement detection will never be perfect for every server, language, or writing style. If you encounter a false positive, add the player to the whitelist or add a distinctive part of the message to the phrase allowlist.
 
 Examples of missed advertisements are especially helpful because they can be used to improve future detection without relying on overly broad keyword blocking.

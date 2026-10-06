@@ -98,12 +98,38 @@ function Test-LuaSyntax {
     Write-Host "Lua syntax: passed." -ForegroundColor Green
 }
 
+function Test-RegressionSuite {
+    param([Parameter(Mandatory)][string]$SourceRoot)
+
+    $runtime = Get-Command lua -ErrorAction SilentlyContinue
+    if (-not $runtime) {
+        $runtime = Get-Command luajit -ErrorAction SilentlyContinue
+    }
+    if (-not $runtime) {
+        Write-Host "Regression suite: skipped (lua/luajit is not installed)." -ForegroundColor DarkYellow
+        return
+    }
+
+    Push-Location $SourceRoot
+    try {
+        & $runtime.Source (Join-Path $SourceRoot 'Tests\run.lua')
+        if ($LASTEXITCODE -ne 0) {
+            throw 'AdBlock Forever regression suite failed.'
+        }
+    }
+    finally {
+        Pop-Location
+    }
+    Write-Host "Regression suite: passed." -ForegroundColor Green
+}
+
 $sourceRoot = Get-FullPath $PSScriptRoot
 $destinationRoot = Get-FullPath $Destination
 $expectedDestination = Get-FullPath (Join-Path (Split-Path -Parent $sourceRoot) 'AdBlockForever')
 $manifestPath = Join-Path $sourceRoot 'release-manifest.txt'
 $tocPath = Join-Path $sourceRoot 'AdBlockForever.toc'
 $developmentTocPath = Join-Path $sourceRoot 'AdBlockForeverDev.toc'
+$obsoleteReleaseFiles = @('UI.lua', 'Advanced.lua', 'BlockedLog.lua')
 
 if ($destinationRoot -ne $expectedDestination) {
     throw "For safety, the destination must be the sibling AdBlockForever folder: $expectedDestination"
@@ -119,7 +145,7 @@ $entries = @(Get-ManifestEntries -ManifestPath $manifestPath)
 if ($entries.Count -eq 0) {
     throw 'release-manifest.txt contains no release files.'
 }
-foreach ($requiredEntry in @('AdBlockForever.toc', 'Core.lua', 'UI.lua')) {
+foreach ($requiredEntry in @('AdBlockForever.toc', 'Core.lua', 'Core/Classifier.lua', 'UI/MainWindow.lua')) {
     if ($entries -notcontains $requiredEntry) {
         throw "The release manifest must include $requiredEntry."
     }
@@ -137,6 +163,7 @@ foreach ($entry in $entries) {
 Assert-Toc -TocPath $tocPath -SourceRoot $sourceRoot
 Assert-Toc -TocPath $developmentTocPath -SourceRoot $sourceRoot
 Test-LuaSyntax -Entries $entries -SourceRoot $sourceRoot
+Test-RegressionSuite -SourceRoot $sourceRoot
 
 $versionLine = Select-String -LiteralPath $tocPath -Pattern '^## Version:\s*(.+?)\s*$' | Select-Object -First 1
 $version = $versionLine.Matches[0].Groups[1].Value
@@ -180,6 +207,12 @@ try {
                 New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
             }
             Copy-Item -LiteralPath $stagedPath -Destination $destinationPath -Force
+        }
+        foreach ($obsoleteEntry in $obsoleteReleaseFiles) {
+            $obsoletePath = Join-Path $destinationRoot $obsoleteEntry
+            if (Test-Path -LiteralPath $obsoletePath -PathType Leaf) {
+                Remove-Item -LiteralPath $obsoletePath -Force
+            }
         }
         Write-Host "Promoted approved files to $destinationRoot" -ForegroundColor Green
     }

@@ -1,0 +1,16 @@
+return {
+    { expected = "guild", message = "<Evermore> is a newly formed NA PVE guild! Actively forming a Thurs/Fri raiding guild. Looking for all roles and socials!" },
+    { expected = "guild", event = "CHAT_MSG_WHISPER", message = "Would you like to join our guild? We are recruiting active players for raids and PvP." },
+    { expected = "profession", message = "[Blacksmithing] 215 can install [Blacksmithing: Mithril Shield Spike] call me" },
+    { expected = "profession", message = "[Enchanting] in UC. 2H +4/5/6, 1H +2/3, Chest: 6 INT/STA, Bracer: 5 STR/INT/STA, Revelation, pst" },
+    { expected = "gold", message = "CHEAP WOW GOLD - fast delivery - visit w w w . example . com" },
+    { expected = "gold", event = "CHAT_MSG_WHISPER", message = "WTS GOLD 100g = $20, instant delivery, discord seller#1234" },
+    { expected = "gold", message = "Comprar oro barato, entrega inmediata, visite example.com" },
+    { expected = false, message = "How much gold do I need for my mount?" },
+    { expected = false, message = "WTB [Arcanite Bar] 10g" },
+    { expected = false, message = "I made 20 gold selling herbs today." },
+    { expected = false, message = "Is buying gold against the rules?" },
+    { expected = false, message = "Selling [Black Lotus] for 5 gold." },
+    { expected = false, message = "LFG RFC, warrior tank." },
+    { expected = false, message = "Is Blacksmithing worth leveling?" },
+}

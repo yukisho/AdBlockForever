@@ -3,6 +3,10 @@
 `AdBlockForeverDev` is the development worktree. Make and test changes here.
 `AdBlockForever` is the public worktree and receives only approved release files.
 
+See `ARCHITECTURE.md` for the runtime module map. Both TOC files define the
+authoritative dependency order; shared modules communicate through the `ABF`
+addon table.
+
 ## In-game testing
 
 Enable **AdBlock Forever Dev** and disable **AdBlock Forever** in the character
@@ -37,6 +41,12 @@ The log supports two exports:
 - Live classifier diagnostics: timestamp, chat event, author, mode, current
   allow/block result, score, matched reasons, and message.
 
+In v0.5.0, diagnostics also include normalized and de-obfuscated text, scored
+signal contributions, Conservative/Balanced/Aggressive comparisons, manual
+expected-category labels, and near-duplicate references. Label the latest
+capture as Guild, Profession, Gold, Custom, or Legitimate, then use **Export
+Fixtures** to produce entries compatible with `Tests/fixtures.lua`.
+
 Use **Select All**, then press Ctrl+C to copy the output. WoW addons cannot write
 directly to the operating-system clipboard.
 
@@ -47,6 +57,8 @@ Additional commands:
 /abfdev capture on
 /abfdev capture off
 /abfdev hoverdebug
+/abfdev label guild|profession|gold|custom|legitimate
+/abfdev fixtures
 /abfdev clearlog
 ```
 
@@ -66,8 +78,9 @@ From PowerShell in this folder:
 .\Build-Release.ps1 -ValidateOnly
 ```
 
-Validation checks the manifest, required TOC metadata, TOC file references, and
-Lua syntax when `luac` is installed.
+Validation checks the manifest, required TOC metadata, TOC file references, Lua
+syntax when `luac` is installed, and the regression suite when `lua` or `luajit`
+is installed.
 
 ## Promote a public build
 
@@ -78,6 +91,9 @@ Lua syntax when `luac` is installed.
 The script copies only entries in `release-manifest.txt` into the sibling
 `AdBlockForever` folder. It refuses to proceed if that public worktree has
 uncommitted changes, unless `-AllowDirtyDestination` is deliberately supplied.
+During the v0.5.0 promotion it also removes the obsolete top-level `UI.lua`,
+`Advanced.lua`, and `BlockedLog.lua` files after their modular replacements are
+copied.
 
 To also create a CurseForge-ready archive:
 
@@ -88,6 +104,13 @@ To also create a CurseForge-ready archive:
 The archive is written to `Releases/AdBlockForever-<version>.zip`. Developer
 tools, tests, build scripts, worktree metadata, and other unlisted files are not
 included.
+
+## Regression tests
+
+The permanent corpus lives in `Tests/fixtures.lua`. Run `lua Tests/run.lua` with
+a Lua 5.1-compatible runtime. The suite covers known advertisements, legitimate
+messages, whitelist and allowlist priority, custom phrases, chat scope, and
+settings export/import.
 
 ## Branches
 

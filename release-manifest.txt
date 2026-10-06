@@ -3,7 +3,18 @@
 # are excluded unless deliberately added here.
 AdBlockForever.toc
 Core.lua
-UI.lua
-BlockedLog.lua
+Core/Database.lua
+Core/Rules.lua
+Core/Transfer.lua
+Core/Classifier.lua
+Core/History.lua
+Core/Commands.lua
+UI/MainWindow.lua
+UI/Minimap.lua
+UI/RulesWindow.lua
+UI/BlockedLog.lua
+Core/Chat.lua
 Media/Icon.tga
 README.md
+CHANGELOG.md
+DESC.md

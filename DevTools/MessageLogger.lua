@@ -27,6 +27,8 @@ local exportScroll
 local countText
 local captureCheck
 local diagnosticsCheck
+local labelButtons = {}
+local RefreshExport
 
 local function IsSecret(value)
     return issecretvalue and issecretvalue(value) or false
@@ -72,6 +74,27 @@ local function MatchText(value)
     value = StripChatMarkup(value):lower()
     value = value:gsub("[%p%s]+", " ")
     return Trim(value)
+end
+
+local function Fingerprint(value)
+    value = MatchText(value):gsub("%d+", "#"):gsub("%s+", "")
+    return value
+end
+
+local function FindNearDuplicate(tools, message)
+    local fingerprint = Fingerprint(message)
+    if #fingerprint < 12 then return nil end
+    for index = #tools.log, 1, -1 do
+        local candidate = Fingerprint(tools.log[index].rawMessage or tools.log[index].message or "")
+        if candidate == fingerprint then
+            return index
+        end
+        local shorter, longer = fingerprint, candidate
+        if #shorter > #longer then shorter, longer = longer, shorter end
+        if #shorter >= 20 and #shorter / math.max(1, #longer) >= 0.8 and longer:find(shorter, 1, true) then
+            return index
+        end
+    end
 end
 
 local function IsNativeMouseOver(region)
@@ -223,9 +246,9 @@ end
 
 local function GetClassification(message, event)
     local mode = event == "CHAT_MSG_WHISPER" and "guild-whisper" or nil
-    local result, note = ABF:ClassifyMessage(message, mode)
+    local result, note = ABF:ClassifyMessage(message, mode, event)
     if not result and not mode then
-        local whisperResult = ABF:ClassifyMessage(message, "guild-whisper")
+        local whisperResult = ABF:ClassifyMessage(message, "guild-whisper", "CHAT_MSG_WHISPER")
         if whisperResult then
             return whisperResult, "guild-whisper", nil
         end
@@ -233,7 +256,7 @@ local function GetClassification(message, event)
     return result, mode, note
 end
 
-local function RefreshExport()
+RefreshExport = function()
     if not exportBox or not logWindow or not logWindow:IsShown() or not ABF.db then
         return
     end
@@ -243,6 +266,8 @@ local function RefreshExport()
         local message = StripChatMarkup(entry.message or entry.rendered or "")
         if tools.includeDiagnostics then
             local result, mode, note = GetClassification(entry.rawMessage or message, entry.event)
+            local normalized, deobfuscated = ABF:GetDiagnosticText(entry.rawMessage or message)
+            local comparison = ABF:GetSensitivityComparison(entry.rawMessage or message, mode, entry.event)
             local verdict
             if result then
                 verdict = string.format(
@@ -260,7 +285,12 @@ local function RefreshExport()
                 entry.event or "RENDERED_CHAT",
                 OneLine(entry.author or "Unknown"),
                 mode or "public",
-                verdict .. " | " .. message
+                verdict .. " | expected=" .. OneLine(entry.expectedCategory or "unlabeled")
+                    .. (entry.nearDuplicateOf and (" | near-duplicate=#" .. entry.nearDuplicateOf) or "")
+                    .. " | sensitivity=" .. comparison.conservative .. "/" .. comparison.balanced .. "/" .. comparison.aggressive
+                    .. " | normalized=" .. OneLine(normalized)
+                    .. " | deobfuscated=" .. OneLine(deobfuscated)
+                    .. " | " .. message
             )
         else
             lines[#lines + 1] = message
@@ -294,6 +324,7 @@ local function CaptureRenderedLine(renderedText, chatFrameName)
     local message = StripChatMarkup(rawMessage)
     local result, mode, note = GetClassification(rawMessage, source and source.event)
     local tools = EnsureData()
+    local duplicateIndex = FindNearDuplicate(tools, rawMessage)
     tools.log[#tools.log + 1] = {
         message = OneLine(message),
         rawMessage = OneLine(rawMessage),
@@ -306,6 +337,7 @@ local function CaptureRenderedLine(renderedText, chatFrameName)
         capturedScore = result and result.score or nil,
         capturedReason = result and result.reason or note,
         capturedMode = mode,
+        nearDuplicateOf = duplicateIndex,
     }
     while #tools.log > tools.maxEntries do
         table.remove(tools.log, 1)
@@ -316,6 +348,9 @@ local function CaptureRenderedLine(renderedText, chatFrameName)
         tools.maxEntries,
         result and ("currently blocks as " .. (result.category or result.label or "unknown")) or "currently allowed"
     ))
+    if duplicateIndex then
+        ABF:Print("This resembles captured message #" .. duplicateIndex .. ".")
+    end
     RefreshExport()
 end
 
@@ -531,12 +566,46 @@ local function CreateButton(parent, text, width, point, relativeTo, relativePoin
     return button
 end
 
+local function LabelLatest(category)
+    local tools = EnsureData()
+    local entry = tools.log[#tools.log]
+    if not entry then
+        ABF:Print("Capture a message before assigning a developer label.")
+        return
+    end
+    entry.expectedCategory = category
+    ABF:Print("Latest capture labeled " .. category .. ".")
+    RefreshExport()
+end
+
+local function BuildFixtureExport()
+    local tools = EnsureData()
+    local lines = {
+        "-- AdBlock Forever " .. tostring(ABF.version) .. " developer fixture export",
+        "return {",
+    }
+    local count = 0
+    for _, entry in ipairs(tools.log) do
+        if entry.expectedCategory then
+            count = count + 1
+            lines[#lines + 1] = string.format(
+                "    { expected = %q, event = %q, message = %q },",
+                entry.expectedCategory,
+                entry.event or "CHAT_MSG_CHANNEL",
+                entry.rawMessage or entry.message or ""
+            )
+        end
+    end
+    lines[#lines + 1] = "}"
+    return table.concat(lines, "\n"), count
+end
+
 local function CreateLogWindow()
     if logWindow then
         return
     end
     logWindow = CreateFrame("Frame", addonName .. "DeveloperLogFrame", UIParent, "BasicFrameTemplateWithInset")
-    logWindow:SetSize(780, 600)
+    logWindow:SetSize(820, 650)
     logWindow:SetPoint("CENTER")
     logWindow:SetFrameStrata("DIALOG")
     logWindow:SetMovable(true)
@@ -580,15 +649,34 @@ local function CreateLogWindow()
         RefreshExport()
     end)
 
+    local labelText = logWindow:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    labelText:SetPoint("TOPLEFT", 18, -91)
+    labelText:SetText("Label latest capture:")
+    local previous = labelText
+    local labels = {
+        { "Guild", "guild", 66 },
+        { "Profession", "profession", 88 },
+        { "Gold", "gold", 62 },
+        { "Custom", "custom", 70 },
+        { "Legitimate", "legitimate", 86 },
+    }
+    for _, definition in ipairs(labels) do
+        local category = definition[2]
+        local button = CreateButton(logWindow, definition[1], definition[3], "LEFT", previous, "RIGHT", 8, 0)
+        button:SetScript("OnClick", function() LabelLatest(category) end)
+        labelButtons[category] = button
+        previous = button
+    end
+
     exportScroll = CreateFrame("ScrollFrame", nil, logWindow, "UIPanelScrollFrameTemplate")
-    exportScroll:SetPoint("TOPLEFT", 18, -92)
+    exportScroll:SetPoint("TOPLEFT", 18, -126)
     exportScroll:SetPoint("BOTTOMRIGHT", -34, 54)
 
     exportBox = CreateFrame("EditBox", nil, exportScroll)
     exportBox:SetMultiLine(true)
     exportBox:SetAutoFocus(false)
     exportBox:SetFontObject(ChatFontNormal)
-    exportBox:SetWidth(712)
+    exportBox:SetWidth(752)
     exportBox:SetTextInsets(6, 6, 6, 6)
     exportBox:SetScript("OnEscapePressed", exportBox.ClearFocus)
     exportBox:SetScript("OnTextChanged", function(self)
@@ -624,6 +712,15 @@ local function CreateLogWindow()
     local refreshButton = CreateButton(logWindow, "Refresh", 82, "RIGHT", selectButton, "LEFT", -8, 0)
     refreshButton:SetScript("OnClick", RefreshExport)
 
+    local fixtureButton = CreateButton(logWindow, "Export Fixtures", 112, "RIGHT", refreshButton, "LEFT", -8, 0)
+    fixtureButton:SetScript("OnClick", function()
+        local text, count = BuildFixtureExport()
+        exportBox:SetText(text)
+        exportBox:SetFocus()
+        exportBox:HighlightText()
+        ABF:Print(string.format("Selected %d labeled regression fixture(s). Press Ctrl+C to copy.", count))
+    end)
+
     StaticPopupDialogs["ADBLOCK_FOREVER_DEV_CLEAR_LOG"] = {
         text = "Clear every captured AdBlock Forever developer-log message?",
         button1 = YES,
@@ -649,6 +746,9 @@ function ABF:ShowDeveloperLog(selectAll)
     end
     if self.HideBlockedLog then
         self:HideBlockedLog()
+    end
+    if self.HideAdvancedUI then
+        self:HideAdvancedUI()
     end
     CreateLogWindow()
     RefreshExport()
@@ -692,6 +792,23 @@ function ABF:HandleDeveloperCommand(command, argument)
         return true
     elseif command == "hoverdebug" or command == "hoverstatus" then
         PrintHoverDiagnostics()
+        return true
+    elseif command == "label" then
+        argument = Trim(argument):lower()
+        if argument == "guild" or argument == "profession" or argument == "gold"
+            or argument == "custom" or argument == "legitimate" then
+            LabelLatest(argument)
+        else
+            self:Print("Usage: " .. self.slashCommand .. " label guild|profession|gold|custom|legitimate")
+        end
+        return true
+    elseif command == "fixtures" then
+        self:ShowDeveloperLog(false)
+        local text, count = BuildFixtureExport()
+        exportBox:SetText(text)
+        exportBox:SetFocus()
+        exportBox:HighlightText()
+        self:Print(string.format("Selected %d labeled regression fixture(s). Press Ctrl+C to copy.", count))
         return true
     elseif command == "clearlog" then
         EnsureData().log = {}

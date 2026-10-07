@@ -5,7 +5,7 @@ local IS_DEVELOPMENT = ADDON_NAME == "AdBlockForeverDev" or ABF.isDevelopment ==
 ABF.name = ADDON_NAME
 ABF.isDevelopment = IS_DEVELOPMENT
 ABF.databaseName = IS_DEVELOPMENT and "AdBlockForeverDevDB" or "AdBlockForeverDB"
-ABF.slashCommand = IS_DEVELOPMENT and "/abfdev" or "/abf"
+ABF.slashCommand = IS_DEVELOPMENT and "/abfdev" or "/abf" or "/ad" or "/adb" or "/adblock"
 ABF.version = "0.5.0"
 ABF.displayName = IS_DEVELOPMENT and "AdBlock Forever Dev" or "AdBlock Forever"
 ABF.iconPath = "Interface\\AddOns\\" .. ADDON_NAME .. "\\Media\\Icon"

@@ -2,7 +2,7 @@
 ## Title: AdBlock Forever Dev
 ## Notes: Development build of AdBlock Forever with local diagnostic tools.
 ## Author: Gravvy
-## Version: 0.5.0-dev
+## Version: 0.5.2-dev
 ## SavedVariables: AdBlockForeverDevDB
 ## IconTexture: Interface\AddOns\AdBlockForeverDev\Media\Icon
 

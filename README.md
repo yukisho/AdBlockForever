@@ -107,6 +107,9 @@ statistics are deliberately excluded.
 The settings window can also be opened with:
 
     /abf
+    /ad
+    /adb
+    /adblock
 
 ## Slash Commands
 

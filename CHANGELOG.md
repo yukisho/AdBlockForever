@@ -1,9 +1,7 @@
-v0.4.0
-- Added gold seller spam blocking
-- Increased detection triggers for messages
+v0.5.2
+- Added additional slash commands for convenience.
 
-## 0.5.0 - In development
-
+v0.5.0
 - Formalized the existing allowed-player system as a global player whitelist that bypasses every filter.
 - Added custom plain-text blocked phrases.
 - Added Conservative, Balanced, and Aggressive sensitivity settings for guild, profession, and gold filters.
@@ -23,3 +21,7 @@ v0.4.0
 - Added near-duplicate detection for captured developer messages.
 - Split the addon into focused Core and UI modules to make filter, database, command, and interface changes easier to locate and maintain.
 - Fixed sensitivity and category labels overflowing their controls in the Rules & Controls window.
+
+v0.4.0
+- Added gold seller spam blocking
+- Increased detection triggers for messages

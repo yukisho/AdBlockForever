@@ -1,5 +1,6 @@
 v0.5.2
 - Added additional slash commands for convenience.
+- Improved handling of guild recruitment ads.
 
 v0.5.0
 - Formalized the existing allowed-player system as a global player whitelist that bypasses every filter.

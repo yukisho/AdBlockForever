@@ -1,6 +1,9 @@
 return {
     { expected = "guild", message = "<Evermore> is a newly formed NA PVE guild! Actively forming a Thurs/Fri raiding guild. Looking for all roles and socials!" },
     { expected = "guild", event = "CHAT_MSG_WHISPER", message = "Would you like to join our guild? We are recruiting active players for raids and PvP." },
+    { expected = "guild", message = "<Spiritfang Clan> LFM to join, NA based RP. You looking for a relaxed group to do dungeons or raid with? Join a guild that keeps the good vibes and loves the adventure. We will carry over into full release and discord is provided." },
+    { expected = "guild", message = "<Premedicated> Newly formed NA PvE guild! Core of TBC anniversary players and WoW Vets. Semi-HC Thurs & Fri 8:30-11:30 EST raids. We're looking to form multiple teams and plan to hit raids when they unlock!" },
+    { expected = "guild", message = "<Eat the Kings> - anti-fascist WoW community together 7+ years! All player types welcome! 200+ Members strong. No fascists/MAGA. Raids 9-11 CST. Discord: Jonny.Boi for info & vetting. Longtime retail guild coming to forever." },
     { expected = "profession", message = "[Blacksmithing] 215 can install [Blacksmithing: Mithril Shield Spike] call me" },
     { expected = "profession", message = "[Enchanting] in UC. 2H +4/5/6, 1H +2/3, Chest: 6 INT/STA, Bracer: 5 STR/INT/STA, Revelation, pst" },
     { expected = "gold", message = "CHEAP WOW GOLD - fast delivery - visit w w w . example . com" },
@@ -12,5 +15,7 @@ return {
     { expected = false, message = "Is buying gold against the rules?" },
     { expected = false, message = "Selling [Black Lotus] for 5 gold." },
     { expected = false, message = "LFG RFC, warrior tank." },
+    { expected = false, message = "How do I join a guild?" },
+    { expected = false, message = "Our guild is newly formed. Does anyone know how to set ranks?" },
     { expected = false, message = "Is Blacksmithing worth leveling?" },
 }

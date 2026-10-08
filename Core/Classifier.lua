@@ -28,6 +28,9 @@ local GUILD_RECRUITING = {
     "набор в гильди", "Набор в гильди", "гильдия набира", "Гильдия набира", "ищет игроков", "Ищет игроков",
     "набираем игроков", "Набираем игроков", "公会招募", "公會招募", "招募成员", "招募成員", "길드원 모집", "길드 모집",
 }
+local GUILD_FORMATION_SIGNALS = {
+    "newly formed", "recently formed", "looking to form multiple teams", "forming multiple teams",
+}
 local MEMBER_SIGNALS = {
     "members", "member", "players", "new players", "returning players", "raiders", "all roles", "any role", "everyone", "socials",
     "mitglieder", "spieler", "membres", "joueurs", "miembros", "jugadores", "membros", "jogadores",
@@ -36,6 +39,7 @@ local MEMBER_SIGNALS = {
 }
 local JOIN_SIGNALS = {
     "join us", "join the", "join up", "come join", "apply", "message us", "message me", "contact us", "contact me",
+    "lfm to join", "join a guild", "all player types welcome",
     "whisper", "send a tell", "send me a message", "want more info", "pst", "pm for", "dm for", "dm me",
     "beitreten", "bewerben", "flüstern", "rejoignez", "postulez", "murmurez", "únete", "unete", "susurra",
     "junte-se", "sussurre", "unisciti", "candidati", "dołącz", "dolacz", "napisz", "вступай", "пиши",
@@ -222,6 +226,7 @@ local function ClassifyGuildRecruitment(text, raw, enabled, allowQuestionRecruit
     if not enabled then return nil end
     local score, reasons = CountSignalGroups(text, {
         { words = GUILD_RECRUITING, points = 5 }, { words = GUILD_CONTEXT, points = 2 },
+        { words = GUILD_FORMATION_SIGNALS, points = 2 },
         { words = MEMBER_SIGNALS, points = 2 }, { words = JOIN_SIGNALS, points = 2 },
         { words = GUILD_DETAIL_SIGNALS, points = 1 },
     })

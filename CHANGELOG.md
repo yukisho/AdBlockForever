@@ -21,6 +21,8 @@ v0.5.0
 - Added near-duplicate detection for captured developer messages.
 - Split the addon into focused Core and UI modules to make filter, database, command, and interface changes easier to locate and maintain.
 - Fixed sensitivity and category labels overflowing their controls in the Rules & Controls window.
+- Expanded guild recruitment detection for long-form `LFM to join` and `join a guild` invitations that omit explicit recruiting language.
+- Added supporting detection for newly formed guild campaigns and invitations welcoming all player types.
 
 v0.4.0
 - Added gold seller spam blocking

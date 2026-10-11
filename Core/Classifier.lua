@@ -17,9 +17,9 @@ local GUILD_RECRUITING = {
     "are you looking for a guild", "guild invite", "we would love to have you", "we'd love to have you",
     "players to build with us", "lf mature", "lf active players", "actively forming", "currently forming",
     "building our roster", "forming our roster", "filling our roster", "rounding out our roster",
-    "looking for all roles", "looking for raiders", "looking for socials",
+    "looking for all roles", "looking for raiders", "looking for socials", "looking for more players",
     "rekrutiert", "sucht mitglieder", "mitglieder gesucht", "gilde sucht",
-    "guilde recrute", "recrutement guilde", "recherche des membres",
+    "guilde recrute", "recrute dès maintenant", "recrute des maintenant", "recrutement guilde", "recherche des membres",
     "gremio recluta", "reclutando miembros", "busca miembros",
     "guilda recruta", "recrutando membros", "procura membros",
     "gilda recluta", "cerca membri", "reclutiamo", "gildia rekrutuje", "szuka członków", "szuka graczy",
@@ -31,23 +31,35 @@ local GUILD_RECRUITING = {
 local GUILD_FORMATION_SIGNALS = {
     "newly formed", "recently formed", "looking to form multiple teams", "forming multiple teams",
 }
+local ROSTER_RECRUITING_SIGNALS = {
+    "guaranteed raid spots", "raid spots open", "raid spots available",
+    "fill our raid teams", "filling our raid teams",
+    "leadership and raid leaders", "raid leaders", "speed roster",
+    "construire un roster",
+}
+local PERSISTENT_TEAM_SIGNALS = {
+    "core team members", "room on one of our", "one of our 3 teams", "multiple raid teams",
+    "second 10 man", "eu to us schedules", "west coast time", "system dkp", "effort points",
+    "clone splits", "roster solide",
+}
 local MEMBER_SIGNALS = {
-    "members", "member", "players", "new players", "returning players", "raiders", "all roles", "any role", "everyone", "socials",
+    "members", "member", "players", "new players", "returning players", "raiders", "all roles", "any role", "core roles", "everyone", "socials",
     "mitglieder", "spieler", "membres", "joueurs", "miembros", "jugadores", "membros", "jogadores",
     "membri", "giocatori", "członków", "graczy", "игроков", "участников", "成员", "成員", "玩家", "길드원",
     "igračima", "igracima", "igrače", "igrace", "članove", "clanove",
 }
 local JOIN_SIGNALS = {
     "join us", "join the", "join up", "come join", "apply", "message us", "message me", "contact us", "contact me",
-    "lfm to join", "join a guild", "all player types welcome",
+    "lfm to join", "join a guild", "all player types welcome", "recruitment channel",
     "whisper", "send a tell", "send me a message", "want more info", "pst", "pm for", "dm for", "dm me",
     "beitreten", "bewerben", "flüstern", "rejoignez", "postulez", "murmurez", "únete", "unete", "susurra",
+    "si intéressé", "si interesse",
     "junte-se", "sussurre", "unisciti", "candidati", "dołącz", "dolacz", "napisz", "вступай", "пиши",
     "加入我们", "加入我們", "加入", "문의", "ako ste zainteresovani", "ako ste zainteresirani",
     "slobodno bacite w", "javite se", "šapnite", "sapnite",
 }
 local GUILD_DETAIL_SIGNALS = {
-    "raid times", "raid time", "raiding", "pve", "pvp", "discord", "progression", "server time", "gmt", "timezone",
+    "raid times", "raid time", "raid team", "raid spot", "raid leader", "raiding", "pve", "pvp", "discord", "progression", "server time", "gmt", "timezone",
     "raidzeiten", "schlachtzug", "horaires de raid", "heures de raid", "horario de raid", "horários de raid", "orari raid",
     "рейд", "дискорд", "活动时间", "活動時間", "레이드",
 }
@@ -227,6 +239,8 @@ local function ClassifyGuildRecruitment(text, raw, enabled, allowQuestionRecruit
     local score, reasons = CountSignalGroups(text, {
         { words = GUILD_RECRUITING, points = 5 }, { words = GUILD_CONTEXT, points = 2 },
         { words = GUILD_FORMATION_SIGNALS, points = 2 },
+        { words = ROSTER_RECRUITING_SIGNALS, points = 3 },
+        { words = PERSISTENT_TEAM_SIGNALS, points = 2 },
         { words = MEMBER_SIGNALS, points = 2 }, { words = JOIN_SIGNALS, points = 2 },
         { words = GUILD_DETAIL_SIGNALS, points = 1 },
     })
@@ -236,6 +250,8 @@ local function ClassifyGuildRecruitment(text, raw, enabled, allowQuestionRecruit
         hasGuildContext, score = true, score + 2; reasons[#reasons + 1] = "guild tag (+2)"
     end
     local hasRecruiting = ContainsAny(text, GUILD_RECRUITING)
+    local hasRosterRecruiting = ContainsAny(text, ROSTER_RECRUITING_SIGNALS)
+    local hasPersistentTeam = ContainsAny(text, PERSISTENT_TEAM_SIGNALS)
     local hasMembers = ContainsAny(text, MEMBER_SIGNALS)
     local hasJoin = ContainsAny(text, JOIN_SIGNALS)
     local hasDetails = ContainsAny(text, GUILD_DETAIL_SIGNALS)
@@ -244,6 +260,13 @@ local function ClassifyGuildRecruitment(text, raw, enabled, allowQuestionRecruit
     local hasDiscord = text:find("discord", 1, true) ~= nil
     if not hasGuildContext and hasDiscord and hasInterestedContact and hasGroupPromotion and #text >= 80 then
         hasGuildContext, score = true, score + 4; reasons[#reasons + 1] = "structured group recruitment (+4)"
+    end
+    if not hasGuildContext and hasGroupPromotion and hasJoin and hasMembers and hasDetails and #text >= 90 then
+        hasGuildContext, score = true, score + 3; reasons[#reasons + 1] = "organized progression recruitment (+3)"
+    end
+    if not hasGuildContext and hasRosterRecruiting and hasJoin and hasDetails
+        and (hasMembers or hasPersistentTeam) and #text >= 70 then
+        hasGuildContext, score = true, score + 3; reasons[#reasons + 1] = "persistent raid roster recruitment (+3)"
     end
     if not hasGuildContext and hasRecruiting and hasMembers and ((hasJoin and hasDetails) or #text >= 100) then
         hasGuildContext, score = true, score + 2; reasons[#reasons + 1] = "inferred guild recruitment (+2)"

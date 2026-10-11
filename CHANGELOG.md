@@ -24,6 +24,9 @@ v0.5.0
 - Fixed sensitivity and category labels overflowing their controls in the Rules & Controls window.
 - Expanded guild recruitment detection for long-form `LFM to join` and `join a guild` invitations that omit explicit recruiting language.
 - Added supporting detection for newly formed guild campaigns and invitations welcoming all player types.
+- Added structured detection for organized leveling/progression communities advertising role support, flexible scheduling, and whisper contact without explicitly saying `guild`.
+- Expanded guild recruitment detection for persistent raid-roster campaigns, multi-team schedules, leadership recruitment, and guild-tagged `looking for more players` ads.
+- Added detection for speed-roster/clone-split campaigns and French recruitment phrasing, roster building, and interested-player contact language.
 
 v0.4.0
 - Added gold seller spam blocking

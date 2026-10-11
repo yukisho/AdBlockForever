@@ -1,3 +1,7 @@
+v0.5.4
+- Improved detection for French recruitment phrasing and interested-player contact language.
+- Improved handling of multi-team raid recruitment messages.
+
 v0.5.2
 - Added additional slash commands for convenience.
 - Improved handling of guild recruitment ads.

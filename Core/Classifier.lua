@@ -18,8 +18,11 @@ local GUILD_RECRUITING = {
     "players to build with us", "lf mature", "lf active players", "actively forming", "currently forming",
     "building our roster", "forming our roster", "filling our roster", "rounding out our roster",
     "looking for all roles", "looking for raiders", "looking for socials", "looking for more players",
+    "left looking for a guild", "looking for a guild at launch",
     "rekrutiert", "sucht mitglieder", "mitglieder gesucht", "gilde sucht",
     "guilde recrute", "recrute dès maintenant", "recrute des maintenant", "recrutement guilde", "recherche des membres",
+    "søger danske spillere", "soger danske spillere", "søger spillere", "soger spillere",
+    "søger medlemmer", "soger medlemmer", "søker spillere", "soker spillere", "søker medlemmer", "soker medlemmer",
     "gremio recluta", "reclutando miembros", "busca miembros",
     "guilda recruta", "recrutando membros", "procura membros",
     "gilda recluta", "cerca membri", "reclutiamo", "gildia rekrutuje", "szuka członków", "szuka graczy",
@@ -33,7 +36,7 @@ local GUILD_FORMATION_SIGNALS = {
 }
 local ROSTER_RECRUITING_SIGNALS = {
     "guaranteed raid spots", "raid spots open", "raid spots available",
-    "fill our raid teams", "filling our raid teams",
+    "fill our raid teams", "filling our raid teams", "filling our last spots",
     "leadership and raid leaders", "raid leaders", "speed roster",
     "construire un roster",
 }
@@ -44,12 +47,14 @@ local PERSISTENT_TEAM_SIGNALS = {
 }
 local MEMBER_SIGNALS = {
     "members", "member", "players", "new players", "returning players", "raiders", "all roles", "any role", "core roles", "everyone", "socials",
+    "all experience levels", "all skill levels",
+    "spillere", "medlemmer",
     "mitglieder", "spieler", "membres", "joueurs", "miembros", "jugadores", "membros", "jogadores",
     "membri", "giocatori", "członków", "graczy", "игроков", "участников", "成员", "成員", "玩家", "길드원",
     "igračima", "igracima", "igrače", "igrace", "članove", "clanove",
 }
 local JOIN_SIGNALS = {
-    "join us", "join the", "join up", "come join", "apply", "message us", "message me", "contact us", "contact me",
+    "join us", "join our", "join the", "join up", "join now", "come join", "apply", "message us", "message me", "contact us", "contact me",
     "lfm to join", "join a guild", "all player types welcome", "recruitment channel",
     "whisper", "send a tell", "send me a message", "want more info", "pst", "pm for", "dm for", "dm me",
     "beitreten", "bewerben", "flüstern", "rejoignez", "postulez", "murmurez", "únete", "unete", "susurra",
@@ -68,7 +73,7 @@ local INTERESTED_CONTACT_SIGNALS = {
 }
 local GROUP_PROMOTION_SIGNALS = {
     "new player friendly", "active events", "organized", "non drama", "weekly pvp", "farm runs", "caravans",
-    "recipe grinds", "dungeons and raids", "dungeons raids",
+    "recipe grinds", "dungeons and raids", "dungeons raids", "safe space", "make friends", "be yourself",
 }
 local PROFESSION_SOLICIT_STRONG = {
     "lfw", "work for tips", "working for tips", "your mats", "your materials", "my mats", "my materials",
@@ -263,6 +268,9 @@ local function ClassifyGuildRecruitment(text, raw, enabled, allowQuestionRecruit
     end
     if not hasGuildContext and hasGroupPromotion and hasJoin and hasMembers and hasDetails and #text >= 90 then
         hasGuildContext, score = true, score + 3; reasons[#reasons + 1] = "organized progression recruitment (+3)"
+    end
+    if hasGuildTag and hasJoin and hasGroupPromotion and not hasRecruiting and #text >= 80 then
+        score = score + 3; reasons[#reasons + 1] = "tagged community invitation (+3)"
     end
     if not hasGuildContext and hasRosterRecruiting and hasJoin and hasDetails
         and (hasMembers or hasPersistentTeam) and #text >= 70 then

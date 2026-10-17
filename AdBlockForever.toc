@@ -2,7 +2,7 @@
 ## Title: AdBlock Forever
 ## Notes: Hides guild recruitment, profession advertisements, and gold seller spam.
 ## Author: Gravvy
-## Version: 0.5.4
+## Version: 0.5.6
 ## SavedVariables: AdBlockForeverDB
 ## IconTexture: Interface\AddOns\AdBlockForever\Media\Icon
 

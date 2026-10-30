@@ -2,6 +2,9 @@ v0.5.4
 - Improved detection for French recruitment phrasing and interested-player contact language.
 - Improved handling of multi-team raid recruitment messages.
 - Added detection for launch-focused recruitment, tagged community invitations, and Danish/Norwegian recruiting language.
+- Added Cyrillic/Greek homoglyph normalization for spam detection and website-backed power-leveling service filtering.
+- Expanded recruitment detection for relaxed raid teams, late-night guild campaigns, established-community pitches, and concise core-spot ads.
+- Added detection for tagged future-raid recruitment using interest language and class-count rosters.
 
 v0.5.2
 - Added additional slash commands for convenience.

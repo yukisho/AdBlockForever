@@ -2,6 +2,7 @@ local _, ABF = ...
 
 local U, C = ABF.util, ABF.constants
 local IsSecret, Fold, NormalizeText = U.IsSecret, U.Fold, U.NormalizeText
+local DeobfuscateSpamText = U.DeobfuscateSpamText
 local ContainsAny, CountSignalGroups = U.ContainsAny, U.CountSignalGroups
 local PROFESSIONS, PROFESSION_ORDER = C.professions, C.professionOrder
 
@@ -19,6 +20,8 @@ local GUILD_RECRUITING = {
     "building our roster", "forming our roster", "filling our roster", "rounding out our roster",
     "looking for all roles", "looking for raiders", "looking for socials", "looking for more players",
     "left looking for a guild", "looking for a guild at launch",
+    "seeking active members for our", "are looking for those",
+    "looking for people interested in raiding", "looking for people interested in joining",
     "rekrutiert", "sucht mitglieder", "mitglieder gesucht", "gilde sucht",
     "guilde recrute", "recrute dès maintenant", "recrute des maintenant", "recrutement guilde", "recherche des membres",
     "søger danske spillere", "soger danske spillere", "søger spillere", "soger spillere",
@@ -36,7 +39,7 @@ local GUILD_FORMATION_SIGNALS = {
 }
 local ROSTER_RECRUITING_SIGNALS = {
     "guaranteed raid spots", "raid spots open", "raid spots available",
-    "fill our raid teams", "filling our raid teams", "filling our last spots",
+    "fill our raid teams", "filling our raid teams", "filling our last spots", "core spot",
     "leadership and raid leaders", "raid leaders", "speed roster",
     "construire un roster",
 }
@@ -74,6 +77,7 @@ local INTERESTED_CONTACT_SIGNALS = {
 local GROUP_PROMOTION_SIGNALS = {
     "new player friendly", "active events", "organized", "non drama", "weekly pvp", "farm runs", "caravans",
     "recipe grinds", "dungeons and raids", "dungeons raids", "safe space", "make friends", "be yourself",
+    "made up of players",
 }
 local PROFESSION_SOLICIT_STRONG = {
     "lfw", "work for tips", "working for tips", "your mats", "your materials", "my mats", "my materials",
@@ -123,6 +127,13 @@ local GOLD_CONTACT_SIGNALS = {
 }
 local REAL_MONEY_SIGNALS = {
     " usd", "usd ", " eur", "eur ", "paypal", "cashapp", "cash app", "venmo", "bitcoin", "crypto", "credit card", "real money",
+}
+local RMT_SERVICE_SIGNALS = {
+    "fast leveling", "power leveling", "powerleveling", "leveling service", "boosting service",
+}
+local RMT_SELLER_SIGNALS = {
+    "our team will handle it", "all by real players", "profs leveled", "professions leveled",
+    "gear for the new dungeons",
 }
 local GOLD_DOMAIN_SUFFIXES = { "com", "net", "org", "gg", "cc", "cn", "shop", "store", "site", "xyz" }
 
@@ -189,6 +200,12 @@ local function CompactSpamText(raw)
     return raw:gsub("0", "o"):gsub("1", "i"):gsub("[^%w]", "")
 end
 
+local function FindSpamSignal(text, deobfuscated, signals)
+    local found, phrase = ContainsAny(text, signals)
+    if found then return found, phrase end
+    return ContainsAny(deobfuscated, signals)
+end
+
 local function HasGoldDomain(raw, text, compact)
     if compact:find("www", 1, true) or compact:find("dotcom", 1, true)
         or compact:find("dotnet", 1, true) or compact:find("discordgg", 1, true) then
@@ -201,8 +218,8 @@ local function HasGoldDomain(raw, text, compact)
     return false
 end
 
-local function HasRealMoneySignal(text, raw)
-    local found, phrase = ContainsAny(text, REAL_MONEY_SIGNALS)
+local function HasRealMoneySignal(text, deobfuscated, raw)
+    local found, phrase = FindSpamSignal(text, deobfuscated, REAL_MONEY_SIGNALS)
     if found then return true, phrase end
     if raw:find("$", 1, true) or raw:find("€", 1, true) or raw:find("£", 1, true) then return true, "real-money price" end
     return false
@@ -210,18 +227,29 @@ end
 
 local function ClassifyGoldSpam(text, raw)
     if not ABF.db.blockGoldSpam then return nil end
-    local compact = CompactSpamText(raw)
-    local strong, strongPhrase = ContainsAny(text, GOLD_SALE_STRONG)
-    local sale, salePhrase = ContainsAny(text, GOLD_SALE_SIGNALS)
-    local domain, domainPhrase = HasGoldDomain(raw, text, compact)
-    local contact, contactPhrase = ContainsAny(text, GOLD_CONTACT_SIGNALS)
-    local marketing, marketingPhrase = ContainsAny(text, GOLD_MARKETING_SIGNALS)
-    local realMoney, moneyPhrase = HasRealMoneySignal(text, raw)
-    local hasGold, goldPhrase = ContainsAny(text, GOLD_WORDS)
+    local deobfuscated = DeobfuscateSpamText(text)
+    local compact = CompactSpamText(deobfuscated)
+    local strong, strongPhrase = FindSpamSignal(text, deobfuscated, GOLD_SALE_STRONG)
+    local sale, salePhrase = FindSpamSignal(text, deobfuscated, GOLD_SALE_SIGNALS)
+    local domain, domainPhrase = HasGoldDomain(raw, deobfuscated, compact)
+    local contact, contactPhrase = FindSpamSignal(text, deobfuscated, GOLD_CONTACT_SIGNALS)
+    local marketing, marketingPhrase = FindSpamSignal(text, deobfuscated, GOLD_MARKETING_SIGNALS)
+    local realMoney, moneyPhrase = HasRealMoneySignal(text, deobfuscated, raw)
+    local hasGold, goldPhrase = FindSpamSignal(text, deobfuscated, GOLD_WORDS)
+    local service, servicePhrase = FindSpamSignal(text, deobfuscated, RMT_SERVICE_SIGNALS)
+    local serviceSale, serviceSalePhrase = FindSpamSignal(text, deobfuscated, RMT_SELLER_SIGNALS)
     if not hasGold and raw:find("g[%s%p]*[o0][%s%p]*l[%s%p]*d") then hasGold, goldPhrase = true, "obfuscated gold" end
     if not hasGold and (strong or sale) then hasGold, goldPhrase = true, "gold sale phrase" end
     if not hasGold and realMoney and raw:find("%f[%d]%d[%d%.,]*%s*k?g%f[%A]") then hasGold, goldPhrase = true, "gold amount" end
-    if not hasGold then return nil end
+    if not hasGold then
+        if not (service and serviceSale and domain) then return nil end
+        local serviceScore = 10
+        if serviceScore < ABF:GetThreshold("gold") then return nil end
+        return {
+            category = "gold", label = "Real-money service spam", score = serviceScore,
+            reason = servicePhrase .. " (+4), " .. serviceSalePhrase .. " (+3), " .. domainPhrase .. " (+3)",
+        }
+    end
 
     local score, reasons, commercial = 2, { goldPhrase .. " (+2)" }, false
     if strong then score = score + 7; commercial = true; reasons[#reasons + 1] = strongPhrase .. " (+7)" end

@@ -2,6 +2,7 @@ local _, ABF = ...
 
 local U, C, D = ABF.util, ABF.constants, ABF.defaults
 local Trim, Fold, NormalizeText, PlayerKey = U.Trim, U.Fold, U.NormalizeText, U.PlayerKey
+local DeobfuscateSpamText = U.DeobfuscateSpamText
 
 function ABF:IsPlayerAllowed(name)
     local key = PlayerKey(name)
@@ -170,6 +171,5 @@ end
 
 function ABF:GetDiagnosticText(message)
     local normalized = NormalizeText(message)
-    local deobfuscated = Fold(message):gsub("0", "o"):gsub("1", "i"):gsub("[^%w%s]", " "):gsub("%s+", " ")
-    return normalized, Trim(deobfuscated)
+    return normalized, DeobfuscateSpamText(message)
 end

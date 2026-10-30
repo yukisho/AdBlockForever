@@ -86,6 +86,30 @@ local function NormalizeText(value)
     return Trim(value)
 end
 
+-- Spam sellers mix Cyrillic/Greek lookalikes into English words to evade simple
+-- phrase matching. Keep this separate from NormalizeText so real non-English
+-- messages and their localized rules are not transliterated.
+local SPAM_CONFUSABLES = {
+    ["А"] = "a", ["а"] = "a", ["В"] = "b", ["в"] = "b", ["Е"] = "e", ["е"] = "e",
+    ["К"] = "k", ["к"] = "k", ["М"] = "m", ["м"] = "m", ["Н"] = "h", ["н"] = "h",
+    ["О"] = "o", ["о"] = "o", ["Р"] = "p", ["р"] = "p", ["С"] = "c", ["с"] = "c",
+    ["Т"] = "t", ["т"] = "t", ["У"] = "y", ["у"] = "y", ["Х"] = "x", ["х"] = "x",
+    ["І"] = "i", ["і"] = "i", ["Ј"] = "j", ["ј"] = "j", ["Ѕ"] = "s", ["ѕ"] = "s",
+    ["Α"] = "a", ["α"] = "a", ["Β"] = "b", ["β"] = "b", ["Ε"] = "e", ["ε"] = "e",
+    ["Η"] = "h", ["η"] = "h", ["Ι"] = "i", ["ι"] = "i", ["Κ"] = "k", ["κ"] = "k",
+    ["Μ"] = "m", ["μ"] = "m", ["Ν"] = "n", ["ν"] = "n", ["Ο"] = "o", ["ο"] = "o",
+    ["Ρ"] = "p", ["ρ"] = "p", ["Τ"] = "t", ["τ"] = "t", ["Υ"] = "y", ["υ"] = "y",
+    ["Χ"] = "x", ["χ"] = "x",
+}
+
+local function DeobfuscateSpamText(value)
+    value = NormalizeText(value)
+    for lookalike, replacement in pairs(SPAM_CONFUSABLES) do
+        value = value:gsub(lookalike, replacement)
+    end
+    return value:gsub("0", "o"):gsub("1", "i")
+end
+
 local function CleanLoggedMessage(value)
     value = Trim(value)
     if value == "" then return "" end
@@ -122,6 +146,7 @@ ABF.util = {
     Trim = Trim,
     Fold = Fold,
     NormalizeText = NormalizeText,
+    DeobfuscateSpamText = DeobfuscateSpamText,
     CleanLoggedMessage = CleanLoggedMessage,
     ContainsAny = ContainsAny,
     CountSignalGroups = CountSignalGroups,

@@ -2,7 +2,7 @@
 ## Title: AdBlock Forever
 ## Notes: Hides scored guild recruitment, profession, trade/service, and gold/RMT advertisements.
 ## Author: Gravvy
-## Version: 0.5.8
+## Version: 0.6.0
 ## SavedVariables: AdBlockForeverDB
 ## IconTexture: Interface\AddOns\AdBlockForever\Media\Icon
 ## AddonCompartmentFunc: AdBlockForever_OnAddonCompartmentClick

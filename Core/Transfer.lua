@@ -29,6 +29,7 @@ function ABF:ExportSettings()
         "blockGuildRecruitment=" .. BoolText(self.db.blockGuildRecruitment),
         "blockWhisperRecruitment=" .. BoolText(self.db.blockWhisperRecruitment),
         "blockProfessionAds=" .. BoolText(self.db.blockProfessionAds),
+        "blockTradeAds=" .. BoolText(self.db.blockTradeAds),
         "blockGoldSpam=" .. BoolText(self.db.blockGoldSpam),
         "minimapHide=" .. BoolText(self.db.minimap.hide),
         "whisperAlert=" .. Encode(self.db.whisperAlert),
@@ -60,6 +61,7 @@ function ABF:ImportSettings(payload)
         blockGuildRecruitment = defaults.blockGuildRecruitment,
         blockWhisperRecruitment = defaults.blockWhisperRecruitment,
         blockProfessionAds = defaults.blockProfessionAds,
+        blockTradeAds = defaults.blockTradeAds,
         blockGoldSpam = defaults.blockGoldSpam,
         minimapHide = defaults.minimap.hide,
         whisperAlert = defaults.whisperAlert,
@@ -70,7 +72,7 @@ function ABF:ImportSettings(payload)
     }
     local booleans = {
         enabled = true, blockGuildRecruitment = true, blockWhisperRecruitment = true,
-        blockProfessionAds = true, blockGoldSpam = true, minimapHide = true,
+        blockProfessionAds = true, blockTradeAds = true, blockGoldSpam = true, minimapHide = true,
     }
 
     for line in payload:gmatch("[^\r\n]+") do
@@ -112,6 +114,7 @@ function ABF:ImportSettings(payload)
     self.db.blockGuildRecruitment = imported.blockGuildRecruitment
     self.db.blockWhisperRecruitment = imported.blockWhisperRecruitment
     self.db.blockProfessionAds = imported.blockProfessionAds
+    self.db.blockTradeAds = imported.blockTradeAds
     self.db.blockGoldSpam = imported.blockGoldSpam
     self.db.minimap.hide = imported.minimapHide
     self.db.whisperAlert = imported.whisperAlert

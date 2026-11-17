@@ -80,7 +80,7 @@ local GROUP_PROMOTION_SIGNALS = {
     "made up of players",
 }
 local PROFESSION_SOLICIT_STRONG = {
-    "lfw", "work for tips", "working for tips", "your mats", "your materials", "my mats", "my materials",
+    "lfw", "looking for work", "work for tips", "working for tips", "your mats", "your materials", "my mats", "my materials",
     "free with mats", "taking orders", "open for orders", "open for business", "crafting orders", "send order",
     "all recipes", "all patterns", "all crafts", "every recipe", "every pattern", "can make", "can craft",
     "can install", "installing for", "crafting for", "tips appreciated", "pst for", "whisper for", "pm for",
@@ -100,6 +100,58 @@ local PROFESSION_SOLICIT_LIGHT = {
 local PROFESSION_REQUEST_PREFIXES = {
     "need ", "looking for ", "lf ", "wtb ", "can anyone ", "anyone able ", "who can ", "seeking ",
     "suche ", "cherche ", "busco ", "procuro ", "cerco ", "ищу ", "Ищу ",
+}
+local TRADE_SALE_SIGNALS = {
+    "selling", "for sale", "verkaufe", "vends", "vendo", "sprzedam", "продам", "出售", "販売", "판매",
+}
+local TRADE_AUCTION_SIGNALS = {
+    "cheaper than ah", "below ah", "under ah", "less than ah", "lower than ah", "beat ah",
+    "cheaper than auction house", "below auction house", "under auction house",
+    "billiger als ah", "günstiger als ah", "guenstiger als ah",
+    "moins cher que l hv", "moins cher que hv", "moins cher que hdv",
+    "más barato que subasta", "mas barato que subasta", "mais barato que leilão", "mais barato que leilao",
+    "più economico dell asta", "piu economico dell asta", "дешевле аукциона", "低于拍卖行", "低於拍賣場", "경매장보다 저렴",
+}
+local TRADE_MARKETING_SIGNALS = {
+    "cheap", "discount", "bulk", "each", "per stack", "multiple available", "in stock", "obo",
+}
+local TRADE_CONTACT_SIGNALS = { "pst", "whisper", "message me", "dm me", "cod", "c o d" }
+local TRAVEL_SERVICE_SIGNALS = {
+    "portals", "portal", "ports to", "port to", "ports from", "port from",
+    "summons", "summon", "summoning", "summoining",
+}
+local TRAVEL_STRONG_OFFER_SIGNALS = {
+    "wts portal", "wts portals", "wts port", "wts ports", "wts summon", "wts summons",
+    "selling portal", "selling portals", "selling port", "selling ports", "selling summon", "selling summons",
+    "portal service", "summon service", "summoning service",
+    "portals available", "portal available", "summons available", "summon available",
+}
+local TRAVEL_OFFER_SIGNALS = { "available", "offering", "open for", "service" }
+local TRAVEL_TIP_SIGNALS = {
+    "tips appreciated", "tips welcome", "for tips", "tip appreciated", "tip welcome",
+    "whatever you can afford", "pay what you can", "beer money",
+}
+local TRAVEL_REQUEST_PREFIXES = {
+    "lf portal", "lf summon", "looking for portal", "looking for a portal", "looking for summon", "looking for a summon",
+    "need portal", "need a portal", "need summon", "need a summon",
+    "can someone portal", "can someone summon", "can any mage", "any mage able", "will tip for portal", "will tip for summon",
+}
+local TRAVEL_DESTINATIONS = {
+    "orgrimmar", "undercity", "thunder bluff", "stormwind", "ironforge", "darnassus",
+    "shattrath", "dalaran", "dire maul", "blackrock depths", "scarlet monastery", "maraudon", "zul farrak", "ogri",
+}
+local LOCKPICKING_SERVICE_SIGNALS = {
+    "lockpicking", "lock picking", "pick lock", "opening boxes", "open boxes", "unlock boxes", "unlock lockboxes",
+}
+local LOCKPICKING_STRONG_OFFER_SIGNALS = {
+    "lockpicking available", "lock picking available", "lockpicking service", "lock picking service",
+}
+local LOCKPICKING_REQUEST_PREFIXES = {
+    "need lockpicking", "need lock picking", "lf lockpicking", "lf lock picking", "looking for lockpicking",
+    "looking for lock picking", "can anyone pick", "can someone pick", "who can pick", "need my lockbox",
+}
+local LOCKPICKING_LOCATION_SIGNALS = {
+    "top of org bank", "org bank", "orgrimmar bank", "bank roof", "at the bank", "in org", "at org",
 }
 local GOLD_WORDS = { "gold", "g0ld", "wow gold", "wow g0ld", "oro", "ouro", "золото", "золота", "金币", "金幣", "골드" }
 local GOLD_SALE_STRONG = {
@@ -194,6 +246,126 @@ local function ClassifyProfession(text, raw)
         if detected[key] and ABF.db.professions[key] ~= false then labels[#labels + 1] = PROFESSIONS[key].label end
     end
     return { category = "profession", label = table.concat(labels, ", "), score = score, reason = table.concat(reasons, ", ") }
+end
+
+local function HasTradeSaleIntent(text)
+    if text:find("%f[%a]wts%f[%A]") then return true, "wts" end
+    return ContainsAny(text, TRADE_SALE_SIGNALS)
+end
+
+local function HasTradeItem(raw)
+    if raw:find("|hitem:", 1, true) then return true, "item link" end
+    if raw:find("%[[^%]]+%]") then return true, "bracketed item" end
+    return false
+end
+
+local function HasTradePrice(text, raw)
+    if text:find("%f[%d]%d[%d%.,]*%s*gold%f[%A]")
+        or raw:find("%f[%d]%d[%d%.,]*%s*[gsc]%f[%A]")
+        or raw:find("[$€£]%s*%d") then
+        return true
+    end
+    return false
+end
+
+local function IsTravelRequest(text)
+    for _, prefix in ipairs(TRAVEL_REQUEST_PREFIXES) do
+        if text:sub(1, #prefix) == prefix then return true end
+    end
+    return false
+end
+
+local function HasTravelPurchaseIntent(text)
+    if text:find("%f[%a]wtb%f[%A]") then return true, "wtb" end
+    if text:find("paying for a portal", 1, true) or text:find("paying for a summon", 1, true) then
+        return true, "paying for transport"
+    end
+    return false
+end
+
+local function HasTravelDestination(text)
+    local found, destination = ContainsAny(text, TRAVEL_DESTINATIONS)
+    if found then return true, destination end
+    for _, abbreviation in ipairs({ "org", "uc", "tb", "sw", "dm", "brd", "sm", "mara", "zf" }) do
+        if text:find("%f[%a]" .. abbreviation .. "%f[%A]") then return true, abbreviation end
+    end
+    return false
+end
+
+local function IsLockpickingRequest(text)
+    for _, prefix in ipairs(LOCKPICKING_REQUEST_PREFIXES) do
+        if text:sub(1, #prefix) == prefix then return true end
+    end
+    return false
+end
+
+local function ClassifyLockpickingAd(text, raw)
+    if not ABF.db.blockTradeAds or IsLockpickingRequest(text) then return nil end
+    local service, servicePhrase = ContainsAny(text, LOCKPICKING_SERVICE_SIGNALS)
+    if not service then return nil end
+
+    local score, reasons = 3, { servicePhrase .. " (+3)" }
+    local strong, strongPhrase = ContainsAny(text, LOCKPICKING_STRONG_OFFER_SIGNALS)
+    if strong then score = score + 3; reasons[#reasons + 1] = strongPhrase .. " (+3)" end
+    local tips, tipPhrase = ContainsAny(text, TRAVEL_TIP_SIGNALS)
+    if tips then score = score + 2; reasons[#reasons + 1] = tipPhrase .. " (+2)" end
+    local location, locationPhrase = ContainsAny(text, LOCKPICKING_LOCATION_SIGNALS)
+    if location then score = score + 2; reasons[#reasons + 1] = locationPhrase .. " (+2)" end
+    if text:find("%f[%d]%d%d%d%s+lock%s*picking%f[%A]")
+        or text:find("%f[%d]%d%d%d%s+pick%s+lock%f[%A]") then
+        score = score + 2; reasons[#reasons + 1] = "lockpicking skill level (+2)"
+    end
+    if HasTradePrice(text, raw) then score = score + 2; reasons[#reasons + 1] = "listed price (+2)" end
+    local contact, contactPhrase = ContainsAny(text, TRADE_CONTACT_SIGNALS)
+    if contact then score = score + 1; reasons[#reasons + 1] = contactPhrase .. " (+1)" end
+    local sale, salePhrase = HasTradeSaleIntent(text)
+    if sale then score = score + 3; reasons[#reasons + 1] = salePhrase .. " (+3)" end
+    if score < ABF:GetThreshold("trade") then return nil end
+    return { category = "trade", label = "Lockpicking advertisement", score = score, reason = table.concat(reasons, ", ") }
+end
+
+local function ClassifyTravelAd(text, raw)
+    if not ABF.db.blockTradeAds or IsTravelRequest(text) then return nil end
+    local service, servicePhrase = ContainsAny(text, TRAVEL_SERVICE_SIGNALS)
+    if not service then return nil end
+
+    local score, reasons = 3, { servicePhrase .. " (+3)" }
+    local strong, strongPhrase = ContainsAny(text, TRAVEL_STRONG_OFFER_SIGNALS)
+    if strong then score = score + 3; reasons[#reasons + 1] = strongPhrase .. " (+3)" end
+    local offer, offerPhrase = ContainsAny(text, TRAVEL_OFFER_SIGNALS)
+    if offer and not strong then score = score + 2; reasons[#reasons + 1] = offerPhrase .. " (+2)" end
+    local sale, salePhrase = HasTradeSaleIntent(text)
+    if sale then score = score + 3; reasons[#reasons + 1] = salePhrase .. " (+3)" end
+    local purchase, purchasePhrase = HasTravelPurchaseIntent(text)
+    if purchase then score = score + 3; reasons[#reasons + 1] = purchasePhrase .. " (+3)" end
+    if HasTradePrice(text, raw) then score = score + 2; reasons[#reasons + 1] = "listed price (+2)" end
+    local tips, tipPhrase = ContainsAny(text, TRAVEL_TIP_SIGNALS)
+    if tips then score = score + 2; reasons[#reasons + 1] = tipPhrase .. " (+2)" end
+    local contact, contactPhrase = ContainsAny(text, TRADE_CONTACT_SIGNALS)
+    if contact then score = score + 1; reasons[#reasons + 1] = contactPhrase .. " (+1)" end
+    local destination, destinationPhrase = HasTravelDestination(text)
+    if destination then score = score + 1; reasons[#reasons + 1] = destinationPhrase .. " destination (+1)" end
+    if score < ABF:GetThreshold("trade") then return nil end
+    return { category = "trade", label = "Portal or summoning advertisement", score = score, reason = table.concat(reasons, ", ") }
+end
+
+local function ClassifyTradeAd(text, raw)
+    if not ABF.db.blockTradeAds then return nil end
+    local hasSale, salePhrase = HasTradeSaleIntent(text)
+    if not hasSale then return nil end
+
+    local score, reasons = 3, { salePhrase .. " (+3)" }
+    local auction, auctionPhrase = ContainsAny(text, TRADE_AUCTION_SIGNALS)
+    if auction then score = score + 4; reasons[#reasons + 1] = auctionPhrase .. " (+4)" end
+    local item, itemPhrase = HasTradeItem(raw)
+    if item then score = score + 2; reasons[#reasons + 1] = itemPhrase .. " (+2)" end
+    if HasTradePrice(text, raw) then score = score + 2; reasons[#reasons + 1] = "listed price (+2)" end
+    local marketing, marketingPhrase = ContainsAny(text, TRADE_MARKETING_SIGNALS)
+    if marketing then score = score + 1; reasons[#reasons + 1] = marketingPhrase .. " (+1)" end
+    local contact, contactPhrase = ContainsAny(text, TRADE_CONTACT_SIGNALS)
+    if contact then score = score + 1; reasons[#reasons + 1] = contactPhrase .. " (+1)" end
+    if score < ABF:GetThreshold("trade") then return nil end
+    return { category = "trade", label = "Trade advertisement", score = score, reason = table.concat(reasons, ", ") }
 end
 
 local function CompactSpamText(raw)
@@ -336,6 +508,14 @@ function ABF:ClassifyMessage(message, mode, event)
     end
     if self:IsCategoryEnabledForEvent("profession", event) then
         local result = ClassifyProfession(text, raw)
+        if result then return result end
+    end
+    if self:IsCategoryEnabledForEvent("trade", event) then
+        local result = ClassifyLockpickingAd(text, raw)
+        if result then return result end
+        result = ClassifyTravelAd(text, raw)
+        if result then return result end
+        result = ClassifyTradeAd(text, raw)
         if result then return result end
     end
     local whisper = mode == "guild-whisper"

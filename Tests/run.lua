@@ -54,9 +54,13 @@ if not addon:IsPlayerAllowed("TrustedPlayer-Realm") then failures = failures + 1
 addon.db.channelScopes.gold.WHISPER = false
 if addon:ClassifyMessage("WTS GOLD cheap at example.com", "guild-whisper", "CHAT_MSG_WHISPER") then failures = failures + 1; print("FAIL whisper scope") end
 
+addon.db.blockTradeAds = false
 local exported = addon:ExportSettings()
 local ok = addon:ImportSettings(exported)
-if not ok or not addon:IsPlayerAllowed("TrustedPlayer-Realm") then failures = failures + 1; print("FAIL settings round trip") end
+if not ok or not addon:IsPlayerAllowed("TrustedPlayer-Realm") or addon.db.blockTradeAds ~= false then
+    failures = failures + 1; print("FAIL settings round trip")
+end
+addon.db.blockTradeAds = true
 
 local comparison = addon:GetSensitivityComparison("Enchanting services available", nil, "CHAT_MSG_CHANNEL")
 if comparison.conservative ~= "allow" or comparison.balanced ~= "allow" or comparison.aggressive:match("^profession@") == nil then
@@ -65,8 +69,18 @@ if comparison.conservative ~= "allow" or comparison.balanced ~= "allow" or compa
 end
 if addon:GetSensitivity("profession") ~= "balanced" then failures = failures + 1; print("FAIL sensitivity restoration") end
 
+local tradeComparison = addon:GetSensitivityComparison("WTS [Black Lotus]", nil, "CHAT_MSG_CHANNEL")
+if tradeComparison.conservative ~= "allow" or tradeComparison.balanced ~= "allow"
+    or tradeComparison.aggressive:match("^trade@") == nil then
+    failures = failures + 1
+    print("FAIL weighted trade sensitivity")
+end
+if addon:GetSensitivity("trade") ~= "balanced" then failures = failures + 1; print("FAIL trade sensitivity restoration") end
+
 addon:ResetSection("stats")
-if addon.db.stats.total ~= 0 or addon.db.stats.custom ~= 0 then failures = failures + 1; print("FAIL statistics reset") end
+if addon.db.stats.total ~= 0 or addon.db.stats.custom ~= 0 or addon.db.stats.trade ~= 0 then
+    failures = failures + 1; print("FAIL statistics reset")
+end
 
 if failures > 0 then error(string.format("%d regression test(s) failed", failures)) end
 print(string.format("AdBlock Forever regression suite passed: %d fixtures plus controls.", #fixtures))

@@ -1,3 +1,14 @@
+v0.5.8
+- Added a separate, toggleable trade-advertisement filter with scored `WTS`, item-link, price, auction-house comparison, marketing, and contact signals.
+- Added localized trade-sale and auction-house comparison phrases without treating non-English chat as spam by itself.
+- Added Trade sensitivity, chat-scope controls, statistics, blocked-log filtering, import/export, reset support, and slash commands.
+- Added native AddOn Compartment integration and an AddOns Settings page with quick controls and links to the full addon windows.
+- Kept the minimap button available and user-toggleable for players who prefer direct access.
+- Added scored portal and summoning-service advertisement detection under the Trade filter, with request and group-coordination safeguards.
+- Added lockpicking-service detection, `looking for work` profession wording, and flexible-payment summon phrasing.
+- Fixed developer-log capture of chat lines exposed as partial rendered fragments by preferring full message metadata and recent raw events.
+- Expanded service detection for abbreviated `port/ports`, commercial `WTB` transport requests, flexible location spellings, and `pick lock`/`opening boxes` wording.
+
 v0.5.4
 - Improved detection for French recruitment phrasing and interested-player contact language.
 - Improved handling of multi-team raid recruitment messages.

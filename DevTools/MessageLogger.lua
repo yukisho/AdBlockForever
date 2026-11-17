@@ -163,6 +163,14 @@ local function IsMouseOver(region)
     return IsNativeMouseOver(region) or IsCursorInsideRegion(region)
 end
 
+local function SafeMessageInfoText(region)
+    local ok, messageInfo = pcall(function() return region.messageInfo end)
+    if not ok or type(messageInfo) ~= "table" or not CanAccessValue(messageInfo) then return nil end
+    local messageOk, message = pcall(function() return messageInfo.message end)
+    if not messageOk or type(message) ~= "string" or not CanAccessValue(message) or message == "" then return nil end
+    return message
+end
+
 local function SafeRegionText(region)
     if not region then
         return nil
@@ -187,8 +195,11 @@ local function SafeRegionText(region)
             return nil
         end
     end
-    local text = region:GetText()
-    if type(text) ~= "string" or IsSecret(text) or text == "" then
+    local textOk, text = pcall(region.GetText, region)
+    if not textOk or type(text) ~= "string" or not CanAccessValue(text) then text = nil end
+    local messageInfoText = SafeMessageInfoText(region)
+    if messageInfoText and (not text or #messageInfoText > #text) then text = messageInfoText end
+    if type(text) ~= "string" or text == "" then
         return nil
     end
     return text
@@ -239,6 +250,18 @@ local function FindRecentEvent(renderedText)
         local entry = recentEvents[index]
         if entry.match ~= "" and renderedMatch:find(entry.match, 1, true) then
             return entry
+        end
+    end
+    -- Some chat addons expose a small child FontString (for example only "TB")
+    -- instead of the complete rendered line. Match that standalone fragment to
+    -- the newest raw event rather than saving the fragment as the message.
+    if #renderedMatch >= 2 then
+        local fragment = " " .. renderedMatch .. " "
+        for index = #recentEvents, 1, -1 do
+            local entry = recentEvents[index]
+            if entry.match ~= "" and (" " .. entry.match .. " "):find(fragment, 1, true) then
+                return entry
+            end
         end
     end
     return nil
@@ -656,6 +679,7 @@ local function CreateLogWindow()
     local labels = {
         { "Guild", "guild", 66 },
         { "Profession", "profession", 88 },
+        { "Trade", "trade", 62 },
         { "Gold", "gold", 62 },
         { "Custom", "custom", 70 },
         { "Legitimate", "legitimate", 86 },
@@ -795,11 +819,11 @@ function ABF:HandleDeveloperCommand(command, argument)
         return true
     elseif command == "label" then
         argument = Trim(argument):lower()
-        if argument == "guild" or argument == "profession" or argument == "gold"
+        if argument == "guild" or argument == "profession" or argument == "trade" or argument == "gold"
             or argument == "custom" or argument == "legitimate" then
             LabelLatest(argument)
         else
-            self:Print("Usage: " .. self.slashCommand .. " label guild|profession|gold|custom|legitimate")
+            self:Print("Usage: " .. self.slashCommand .. " label guild|profession|trade|gold|custom|legitimate")
         end
         return true
     elseif command == "fixtures" then

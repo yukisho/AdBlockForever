@@ -50,6 +50,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         local loadedAddon = ...
         if loadedAddon ~= ABF.name then return end
         ABF:EnsureDatabase()
+        if ABF.RegisterSettingsPanel then ABF:RegisterSettingsPanel() end
         if ABF.InitializeDeveloperTools then ABF:InitializeDeveloperTools() end
         local otherAddon = ABF.isDevelopment and "AdBlockForever" or "AdBlockForeverDev"
         if IsAddonLoaded(otherAddon) then

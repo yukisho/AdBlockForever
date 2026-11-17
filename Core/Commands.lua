@@ -31,7 +31,7 @@ end
 function ABF:ShowHelp()
     self:Print(COMMAND .. " - open settings")
     self:Print(COMMAND .. " on|off")
-    self:Print(COMMAND .. " guild on|off | whispers on|off | professions on|off | gold on|off")
+    self:Print(COMMAND .. " guild on|off | whispers on|off | professions on|off | trade on|off | gold on|off")
     self:Print(COMMAND .. " profession NAME on|off")
     self:Print(COMMAND .. " whitelist NAME | unwhitelist NAME")
     self:Print(COMMAND .. " allowphrase TEXT | unallowphrase TEXT | blockphrase TEXT | unblockphrase TEXT")
@@ -63,6 +63,8 @@ SlashCmdList[slashKey] = function(message)
         SetToggle("blockWhisperRecruitment", argument, "Guild recruitment whisper filtering")
     elseif command == "professions" or command == "professionads" then
         SetToggle("blockProfessionAds", argument, "Profession advertisement filtering")
+    elseif command == "trade" or command == "tradeads" then
+        SetToggle("blockTradeAds", argument, "Trade and service advertisement filtering")
     elseif command == "gold" or command == "goldspam" then
         SetToggle("blockGoldSpam", argument, "Gold seller spam filtering")
     elseif command == "profession" then
@@ -94,7 +96,7 @@ SlashCmdList[slashKey] = function(message)
         if ABF:SetSensitivity(category, value) then
             ABF:Print(C.categoryLabels[category] .. " sensitivity is now " .. value .. ".")
         else
-            ABF:Print("Usage: " .. COMMAND .. " sensitivity guild|profession|gold conservative|balanced|aggressive")
+            ABF:Print("Usage: " .. COMMAND .. " sensitivity guild|profession|trade|gold conservative|balanced|aggressive")
         end
     elseif command == "scope" then
         local category, scope, toggle = argument:match("^(%S+)%s+(%S+)%s+(on|off)%s*$")
@@ -103,7 +105,7 @@ SlashCmdList[slashKey] = function(message)
         if ABF:SetCategoryScope(category, scope, toggle == "on") then
             ABF:Print(C.categoryLabels[category] .. " in " .. C.scopeLabels[scope] .. " is now " .. toggle .. ".")
         else
-            ABF:Print("Usage: " .. COMMAND .. " scope guild|profession|gold|custom channel|say|yell|whisper on|off")
+            ABF:Print("Usage: " .. COMMAND .. " scope guild|profession|trade|gold|custom channel|say|yell|whisper on|off")
         end
     elseif command == "advanced" or command == "rules" then
         if ABF.ShowAdvancedUI then ABF:ShowAdvancedUI() end
@@ -114,9 +116,9 @@ SlashCmdList[slashKey] = function(message)
         else ABF:Print("Minimap button is " .. (ABF.db.minimap.hide and "hidden" or "shown") .. "."); return end
         ABF:NotifyChanged()
     elseif command == "stats" then
-        ABF:Print(string.format("%d blocked: %d guild recruitment, %d profession ads, %d gold seller spam, %d custom phrases.",
+        ABF:Print(string.format("%d blocked: %d guild recruitment, %d profession ads, %d trade ads, %d gold seller spam, %d custom phrases.",
             ABF.db.stats.total or 0, ABF.db.stats.guild or 0, ABF.db.stats.profession or 0,
-            ABF.db.stats.gold or 0, ABF.db.stats.custom or 0))
+            ABF.db.stats.trade or 0, ABF.db.stats.gold or 0, ABF.db.stats.custom or 0))
     elseif command == "last" then
         local entry = ABF:GetLastBlocked()
         if entry then

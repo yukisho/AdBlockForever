@@ -1,6 +1,6 @@
 # AdBlock Forever
 
-**AdBlock Forever** keeps chat cleaner by automatically hiding guild recruitment messages, profession advertisements, and gold seller spam in **WoW Forever**. It can also block unsolicited guild-recruitment whispers.
+**AdBlock Forever** keeps chat cleaner by automatically hiding guild recruitment messages, profession advertisements, scored trade advertisements, and gold/RMT seller spam in **WoW Forever**. It can also block unsolicited guild-recruitment whispers.
 
 Unlike a traditional ignore addon, AdBlock Forever filters only the detected advertisement. Other messages from the same player remain visible, and the addon never modifies your Blizzard ignore list.
 
@@ -8,12 +8,14 @@ Unlike a traditional ignore addon, AdBlock Forever filters only the detected adv
 
 - Automatically detects guild recruitment advertisements.
 - Automatically detects profession and crafting advertisements.
+- Automatically detects trade advertisements using weighted sale, item, price, and auction-house comparison signals.
+- Detects portal and summoning-service advertisements using offers, prices, tips, destinations, and contact language while allowing player requests and group coordination.
 - Automatically detects gold seller spam in public chat and incoming whispers.
 - Optionally blocks unsolicited guild-recruitment whispers.
 - Filters public channels, Say, and Yell.
 - Does not filter Guild, Officer, Party, Raid, or Instance chat.
-- Ordinary whispers and profession advertisements sent by whisper remain visible unless they match the gold-spam filter.
-- Separate toggles for public guild recruitment, recruitment whispers, profession advertisements, and gold seller spam.
+- Ordinary whispers plus profession and trade advertisements sent by whisper remain visible by default unless they match the gold-spam filter.
+- Separate toggles for public guild recruitment, recruitment whispers, profession advertisements, trade/service advertisements, and gold seller spam.
 - Conservative, Balanced, and Aggressive sensitivity for each automatic filter.
 - Independent Channel, Say, Yell, and Whisper scope for every filter category.
 - Individual controls for each profession.
@@ -21,6 +23,7 @@ Unlike a traditional ignore addon, AdBlock Forever filters only the detected adv
 - Phrase allowlist for messages containing specific text.
 - Custom blocked phrases for server-specific spam.
 - Movable minimap button that follows the minimap rim.
+- Native AddOn Compartment entry and an AddOns Settings page, so the minimap button can be hidden without losing UI access.
 - Movable settings window constrained to the game screen.
 - Persistent account-wide settings.
 - Statistics showing how many messages have been blocked.
@@ -61,12 +64,15 @@ The addon combines signals such as:
 - Profession and enchantment links
 - Crafting orders
 - Materials, recipes, fees, and tips
+- Trade-sale phrases such as `WTS`, linked or bracketed items, listed prices, and auction-house comparisons
+- Portal and summoning offers combined with prices, tips, destinations, or contact instructions
+- Lockpicking services combined with skill level, location, tips, price, or contact instructions
 - Contact phrases such as “PST,” “whisper,” or “message me”
 - Gold-sale language, real-money pricing, delivery claims, and obfuscated website/contact details
 
-A casual mention of a guild, profession, or gold is not normally enough to hide a message. Gold detection requires a combination of commercial signals, while question-style guild invitations are treated more aggressively in whispers because mass recruiters often phrase advertisements as personal questions.
+A casual mention of a guild, profession, `WTS`, or gold is not normally enough to hide a message. For example, `WTS` alone remains visible at Balanced sensitivity; supporting evidence such as an item plus a listed price or “cheaper than AH” raises the score. Gold detection requires a combination of commercial signals, while question-style guild invitations are treated more aggressively in whispers because mass recruiters often phrase advertisements as personal questions.
 
-Detection recognizes common advertising phrases in English, German, French, Spanish, Portuguese, Italian, Polish, Russian, Simplified and Traditional Chinese, and Korean. Detection outside English is best effort and will continue to improve.
+Detection recognizes common advertising phrases in English, German, French, Spanish, Portuguese, Italian, Polish, Russian, Simplified and Traditional Chinese, and Korean. Non-English text is not considered spam on its own; localized advertising phrases are weighted like their English equivalents. Detection outside English is best effort and will continue to improve.
 
 ## Whisper Filtering
 
@@ -104,6 +110,8 @@ statistics are deliberately excluded.
 - **Right-click:** Enable or disable all filtering.
 - **Drag:** Move the button around the minimap.
 
+The minimap button is optional. Uncheck **Show minimap button** in the main window or the native AddOns Settings page to hide it. The full UI remains available from Blizzard's AddOn Compartment, **Settings > AddOns > AdBlock Forever**, or the slash commands below.
+
 The settings window can also be opened with:
 
     /abf
@@ -118,6 +126,7 @@ The settings window can also be opened with:
     /abf guild on|off
     /abf whispers on|off
     /abf professions on|off
+    /abf trade on|off
     /abf gold on|off
     /abf profession NAME on|off
     /abf whitelist NAME
@@ -176,7 +185,7 @@ Only messages matching the enabled filters are hidden.
 1. Download and extract the addon.
 2. Place the **AdBlockForever** folder in your WoW Forever **Interface/AddOns** directory.
 3. Restart the client or reload the UI.
-4. Type **/abf** or left-click the minimap button to configure the addon.
+4. Type **/abf**, use Blizzard's AddOn Compartment, open **Settings > AddOns > AdBlock Forever**, or left-click the optional minimap button.
 
 ## Feedback
 

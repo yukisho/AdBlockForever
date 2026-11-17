@@ -177,6 +177,10 @@ local function BuildUI()
         ABF.db.blockGoldSpam = self:GetChecked() and true or false
         ABF:NotifyChanged()
     end)
+    mainChecks.trade = CreateCheck(window, "Block trade & service ads", 22, -110, function(self)
+        ABF.db.blockTradeAds = self:GetChecked() and true or false
+        ABF:NotifyChanged()
+    end)
 
     local professionsPanel = CreateFrame("Frame", nil, window, "InsetFrameTemplate")
     professionsPanel:SetPoint("TOPLEFT", 14, -148)
@@ -281,11 +285,12 @@ function ABF:RefreshUI()
     end
 
     statusText:SetText(string.format(
-        "%s  |  %d blocked (%d guild, %d profession, %d gold, %d custom)",
+        "%s  |  %d blocked (%d guild, %d profession, %d trade, %d gold, %d custom)",
         self.db.enabled and "|cff55ff55Enabled|r" or "|cffff5555Disabled|r",
         self.db.stats.total or 0,
         self.db.stats.guild or 0,
         self.db.stats.profession or 0,
+        self.db.stats.trade or 0,
         self.db.stats.gold or 0,
         self.db.stats.custom or 0
     ))
@@ -294,6 +299,7 @@ function ABF:RefreshUI()
     mainChecks.guild:SetChecked(self.db.blockGuildRecruitment)
     mainChecks.whispers:SetChecked(self.db.blockWhisperRecruitment)
     mainChecks.professions:SetChecked(self.db.blockProfessionAds)
+    mainChecks.trade:SetChecked(self.db.blockTradeAds)
     mainChecks.gold:SetChecked(self.db.blockGoldSpam)
     mainChecks.minimap:SetChecked(not self.db.minimap.hide)
 

@@ -153,6 +153,7 @@ function ABF:ResetSection(section)
         self.db.blockGuildRecruitment = defaults.blockGuildRecruitment
         self.db.blockWhisperRecruitment = defaults.blockWhisperRecruitment
         self.db.blockProfessionAds = defaults.blockProfessionAds
+        self.db.blockTradeAds = defaults.blockTradeAds
         self.db.blockGoldSpam = defaults.blockGoldSpam
         self.db.professions = D.Professions()
         self.db.sensitivity = D.Sensitivity()

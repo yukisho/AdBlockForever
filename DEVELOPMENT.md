@@ -44,7 +44,7 @@ The log supports two exports:
 In v0.5.0, diagnostics also include normalized and de-obfuscated text, scored
 signal contributions, Conservative/Balanced/Aggressive comparisons, manual
 expected-category labels, and near-duplicate references. Label the latest
-capture as Guild, Profession, Gold, Custom, or Legitimate, then use **Export
+capture as Guild, Profession, Trade, Gold, Custom, or Legitimate, then use **Export
 Fixtures** to produce entries compatible with `Tests/fixtures.lua`.
 
 Use **Select All**, then press Ctrl+C to copy the output. WoW addons cannot write
@@ -57,7 +57,7 @@ Additional commands:
 /abfdev capture on
 /abfdev capture off
 /abfdev hoverdebug
-/abfdev label guild|profession|gold|custom|legitimate
+/abfdev label guild|profession|trade|gold|custom|legitimate
 /abfdev fixtures
 /abfdev clearlog
 ```

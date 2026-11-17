@@ -5,6 +5,7 @@
 ## Version: 0.5.8-dev
 ## SavedVariables: AdBlockForeverDevDB
 ## IconTexture: Interface\AddOns\AdBlockForeverDev\Media\Icon
+## AddonCompartmentFunc: AdBlockForeverDev_OnAddonCompartmentClick
 
 DevTools\Bootstrap.lua
 Core.lua
@@ -16,6 +17,7 @@ Core\History.lua
 Core\Commands.lua
 UI\MainWindow.lua
 UI\Minimap.lua
+UI\Settings.lua
 UI\RulesWindow.lua
 UI\BlockedLog.lua
 Core\Chat.lua

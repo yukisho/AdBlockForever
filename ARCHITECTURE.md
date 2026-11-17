@@ -6,7 +6,7 @@
 - `Core/Database.lua` — defaults, SavedVariables migrations, and database validation.
 - `Core/Rules.lua` — player whitelist, phrase rules, sensitivity, scopes, resets, and diagnostics.
 - `Core/Transfer.lua` — settings and rule import/export serialization.
-- `Core/Classifier.lua` — guild, profession, gold, and custom-phrase classification.
+- `Core/Classifier.lua` — guild, profession, trade, gold, and custom-phrase classification.
 - `Core/History.lua` — blocked-message history, statistics, deduplication, and whisper alerts.
 - `Core/Commands.lua` — public and development slash-command routing.
 - `Core/Chat.lua` — chat filters, change notifications, addon startup, and conflict detection.
@@ -15,6 +15,7 @@
 
 - `UI/MainWindow.lua` — primary settings window.
 - `UI/Minimap.lua` — minimap button, tooltip, and rim positioning.
+- `UI/Settings.lua` — native AddOns Settings page and AddOn Compartment entry point.
 - `UI/RulesWindow.lua` — custom rules, sensitivity, scopes, alerts, resets, and transfer UI.
 - `UI/BlockedLog.lua` — searchable blocked-message review and correction actions.
 

@@ -1,7 +1,7 @@
 # AdBlock Forever
 
 AdBlock Forever keeps **WoW Forever** chat readable by hiding detected guild
-recruitment, profession advertisements, gold seller spam, and player-defined
+recruitment, profession advertisements, scored trade advertisements, gold/RMT seller spam, and player-defined
 spam phrases—without placing anyone on Blizzard's Ignore list.
 
 Only the matching message is hidden. Other messages from the same player remain
@@ -11,6 +11,9 @@ visible unless that player sends another matching advertisement.
 
 - Guild recruitment filtering in public chat and optional incoming whispers
 - Profession advertisement detection with individual profession toggles
+- Weighted trade-ad detection for sale phrases, item links, prices, and auction-house comparisons
+- Portal and summoning-service ad detection with safeguards for requests and group coordination
+- Lockpicking-service ad detection with safeguards for legitimate requests and skill discussion
 - Gold seller detection in public chat and whispers
 - Global player whitelist and phrase allowlist
 - Custom plain-text blocked phrases
@@ -20,13 +23,14 @@ visible unless that player sends another matching advertisement.
 - Optional blocked-whisper notices and sounds
 - Settings and rule import/export
 - Movable minimap button and screen-constrained windows
+- Native AddOn Compartment and AddOns Settings entries; the minimap button can be hidden
 - Best-effort multilingual detection
 
 The player whitelist always wins: messages from a whitelisted player remain
 visible regardless of their content. Phrase allowlist entries also take priority
 over automatic and custom filters.
 
-Open the settings with `/abf` or the minimap button. Use `/abf advanced` for
+Open the settings with `/abf`, Blizzard's AddOn Compartment, the AddOns Settings tab, or the optional minimap button. Use `/abf advanced` for
 sensitivity, channel scope, custom rules, alerts, resets, and import/export.
 
 AdBlock Forever works entirely on your client. It does not report players, send

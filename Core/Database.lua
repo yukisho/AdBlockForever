@@ -10,29 +10,31 @@ local function DefaultProfessionOptions()
 end
 
 local function DefaultSensitivity()
-    return { guild = "balanced", profession = "balanced", gold = "balanced" }
+    return { guild = "balanced", profession = "balanced", trade = "balanced", gold = "balanced" }
 end
 
 local function DefaultChannelScopes()
     return {
         guild = { CHANNEL = true, SAY = true, YELL = true, WHISPER = true },
         profession = { CHANNEL = true, SAY = true, YELL = true, WHISPER = false },
+        trade = { CHANNEL = true, SAY = true, YELL = true, WHISPER = false },
         gold = { CHANNEL = true, SAY = true, YELL = true, WHISPER = true },
         custom = { CHANNEL = true, SAY = true, YELL = true, WHISPER = true },
     }
 end
 
 local function DefaultStats()
-    return { total = 0, guild = 0, profession = 0, gold = 0, custom = 0 }
+    return { total = 0, guild = 0, profession = 0, trade = 0, gold = 0, custom = 0 }
 end
 
 local function DefaultDatabase()
     return {
-        version = 5,
+        version = 6,
         enabled = true,
         blockGuildRecruitment = true,
         blockWhisperRecruitment = true,
         blockProfessionAds = true,
+        blockTradeAds = true,
         blockGoldSpam = true,
         professions = DefaultProfessionOptions(),
         allowedPlayers = {},
@@ -70,6 +72,9 @@ local function MigrateDatabase(database)
             database.stats.custom = 0
         end
         version = 5
+    end
+    if version < 6 then
+        version = 6
     end
     database.version = version
 end
@@ -125,6 +130,6 @@ function ABF:EnsureDatabase()
     for key, value in pairs(defaults.stats) do
         if type(database.stats[key]) ~= "number" then database.stats[key] = value end
     end
-    database.version = 5
+    database.version = 6
     self.db = database
 end

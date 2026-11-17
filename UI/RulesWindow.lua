@@ -15,6 +15,7 @@ local ALERT_ORDER = { "none", "notice", "sound", "both" }
 local SHORT_CATEGORY_LABELS = {
     guild = "Guild",
     profession = "Professions",
+    trade = "Trade/services",
     gold = "Gold sellers",
     custom = "Custom phrases",
 }
@@ -106,7 +107,7 @@ end
 
 local function CreateRulesPanel()
     local panel = CreateFrame("Frame", nil, window, "InsetFrameTemplate")
-    panel:SetSize(410, 260)
+    panel:SetSize(410, 280)
     panel:SetPoint("TOPLEFT", 14, -56)
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -145,7 +146,7 @@ end
 
 local function CreateControlsPanel()
     local panel = CreateFrame("Frame", nil, window, "InsetFrameTemplate")
-    panel:SetSize(426, 260)
+    panel:SetSize(426, 280)
     panel:SetPoint("TOPRIGHT", -14, -56)
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -153,15 +154,15 @@ local function CreateControlsPanel()
     title:SetText("Sensitivity and chat scope")
 
     local x = 12
-    for _, category in ipairs({ "guild", "profession", "gold" }) do
+    for _, category in ipairs({ "guild", "profession", "trade", "gold" }) do
         local categoryKey = category
         local categoryLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         categoryLabel:SetPoint("TOPLEFT", x, -38)
-        categoryLabel:SetWidth(130)
+        categoryLabel:SetWidth(96)
         categoryLabel:SetJustifyH("CENTER")
         categoryLabel:SetText(SHORT_CATEGORY_LABELS[category])
 
-        local button = CreateButton(panel, "", 130, "TOPLEFT", panel, "TOPLEFT", x, -54)
+        local button = CreateButton(panel, "", 96, "TOPLEFT", panel, "TOPLEFT", x, -54)
         button:SetScript("OnClick", function()
             ABF:SetSensitivity(categoryKey, CycleValue(ABF:GetSensitivity(categoryKey), SENSITIVITY_ORDER))
             ABF:RefreshAdvancedUI()
@@ -174,7 +175,7 @@ local function CreateControlsPanel()
         end)
         button:SetScript("OnLeave", function() GameTooltip:Hide() end)
         sensitivityButtons[category] = button
-        x = x + 136
+        x = x + 101
     end
 
     local headings = { "Filter", "Channel", "Say", "Yell", "Whisper" }
@@ -211,7 +212,7 @@ end
 
 local function CreateTransferPanel()
     local panel = CreateFrame("Frame", nil, window, "InsetFrameTemplate")
-    panel:SetPoint("TOPLEFT", 14, -328)
+    panel:SetPoint("TOPLEFT", 14, -348)
     panel:SetPoint("BOTTOMRIGHT", -14, 56)
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")

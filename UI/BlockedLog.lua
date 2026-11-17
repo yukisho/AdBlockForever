@@ -12,7 +12,7 @@ local categoryFilter = "all"
 local selectedPosition = 1
 local filteredEntries = {}
 
-local CATEGORY_FILTERS = { "all", "guild", "profession", "gold", "custom" }
+local CATEGORY_FILTERS = { "all", "guild", "profession", "trade", "gold", "custom" }
 
 local function OneLine(value)
     if type(value) ~= "string" then

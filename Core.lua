@@ -6,15 +6,16 @@ ABF.name = ADDON_NAME
 ABF.isDevelopment = IS_DEVELOPMENT
 ABF.databaseName = IS_DEVELOPMENT and "AdBlockForeverDevDB" or "AdBlockForeverDB"
 ABF.slashCommand = IS_DEVELOPMENT and "/abfdev" or "/abf" or "/ad" or "/adb" or "/adblock"
-ABF.version = "0.5.0"
+ABF.version = "0.5.8"
 ABF.displayName = IS_DEVELOPMENT and "AdBlock Forever Dev" or "AdBlock Forever"
 ABF.iconPath = "Interface\\AddOns\\" .. ADDON_NAME .. "\\Media\\Icon"
 ABF.blockedLogLimit = 500
 
-local CATEGORY_ORDER = { "guild", "profession", "gold", "custom" }
+local CATEGORY_ORDER = { "guild", "profession", "trade", "gold", "custom" }
 local CATEGORY_LABELS = {
     guild = "Guild recruitment",
     profession = "Profession advertisements",
+    trade = "Trade and service advertisements",
     gold = "Gold seller spam",
     custom = "Custom blocked phrases",
 }
@@ -25,7 +26,7 @@ local SCOPE_LABELS = {
     YELL = "Yell",
     WHISPER = "Whispers",
 }
-local BASE_THRESHOLDS = { guild = 7, profession = 6, gold = 7 }
+local BASE_THRESHOLDS = { guild = 7, profession = 6, trade = 7, gold = 7 }
 local SENSITIVITY_OFFSETS = { conservative = 2, balanced = 0, aggressive = -2 }
 local CHAT_EVENTS = { "CHAT_MSG_CHANNEL", "CHAT_MSG_SAY", "CHAT_MSG_YELL", "CHAT_MSG_WHISPER" }
 local PROFESSION_ORDER = {

@@ -1,10 +1,11 @@
 ## Interface: 16001
 ## Title: AdBlock Forever
-## Notes: Hides guild recruitment, profession advertisements, and gold seller spam.
+## Notes: Hides scored guild recruitment, profession, trade/service, and gold/RMT advertisements.
 ## Author: Gravvy
 ## Version: 0.5.8
 ## SavedVariables: AdBlockForeverDB
 ## IconTexture: Interface\AddOns\AdBlockForever\Media\Icon
+## AddonCompartmentFunc: AdBlockForever_OnAddonCompartmentClick
 
 Core.lua
 Core\Database.lua
@@ -15,6 +16,7 @@ Core\History.lua
 Core\Commands.lua
 UI\MainWindow.lua
 UI\Minimap.lua
+UI\Settings.lua
 UI\RulesWindow.lua
 UI\BlockedLog.lua
 Core\Chat.lua
